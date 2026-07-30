@@ -3,6 +3,7 @@ import os
 import re
 import secrets
 import threading
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -1912,26 +1913,16 @@ def run_bot() -> None:
     print(f"WebApp URL: {WEBAPP_URL}")
     if not WEBAPP_READY:
         print("OGOHLANTIRISH: WEBAPP_URL HTTPS emas — Telegram Mini App ishlamaydi.")
-    bot.infinity_polling(skip_pending=True, timeout=60)
-
-
-_services_started = False
-_services_lock = threading.Lock()
-
-
-def start_background_services() -> None:
-    """Passenger yoki lokal ishga tushirishda bot + cleanup (bir marta)."""
-    global _services_started
-    with _services_lock:
-        if _services_started:
-            return
-        _services_started = True
-        start_storage_cleanup_loop()
-        threading.Thread(target=run_bot, daemon=True).start()
-        print("Background services started (bot + storage cleanup)")
+    while True:
+        try:
+            bot.infinity_polling(skip_pending=True, timeout=25, long_polling_timeout=20)
+        except Exception as exc:
+            print(f"Bot polling xato, 3s dan keyin qayta: {exc}")
+            time.sleep(3)
 
 
 if __name__ == "__main__":
-    start_background_services()
+    start_storage_cleanup_loop()
+    threading.Thread(target=run_bot, daemon=True).start()
     print(f"Yuan Go web: http://localhost:{PORT}")
     app.run(host="0.0.0.0", port=PORT, debug=False, use_reloader=False)
