@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="uz">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Yuan Go — Admin</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="/admin-app.css?v=1" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="brand">
+        <span class="mark">💱</span>
+        <div>
+          <h1>Yuan Admin</h1>
+          <p>Chek tekshirish va yuan yuborish</p>
+        </div>
+      </div>
+      <button id="refreshBtn" class="icon-btn" type="button">⟳</button>
+    </header>
+
+    <main>
+      <section id="deniedView" class="denied" hidden>
+        <div class="denied-icon">⛔</div>
+        <h2>Ruxsat yo'q</h2>
+        <p>Bu panel faqat adminlar uchun. Botga <code>/start 123456789</code> yuboring.</p>
+      </section>
+
+      <section id="panelView" hidden>
+        <div class="stats">
+          <div class="stat"><b id="statToday">0</b><span>Bugun</span></div>
+          <div class="stat orange"><b id="statProgress">0</b><span>Kutilayotgan</span></div>
+          <div class="stat green"><b id="statDone">0</b><span>Yakunlangan</span></div>
+          <div class="stat red"><b id="statCancelled">0</b><span>Bekor</span></div>
+        </div>
+
+        <nav class="tabs">
+          <button class="tab is-active" type="button" data-status="progress">Kutilayotgan</button>
+          <button class="tab" type="button" data-status="">Barchasi</button>
+          <button class="tab" type="button" data-status="done">Yakunlangan</button>
+          <button class="tab" type="button" data-status="cancelled">Bekor</button>
+        </nav>
+
+        <div id="txList" class="tx-list"></div>
+      </section>
+    </main>
+
+    <div id="detailSheet" class="sheet" hidden>
+      <div class="sheet-card">
+        <div class="sheet-head">
+          <h2>Tranzaksiya tafsiloti</h2>
+          <button id="closeDetailBtn" class="icon-btn" type="button">✕</button>
+        </div>
+        <div id="detailBody"></div>
+        <div id="cancelForm" class="form" hidden>
+          <label for="cancelReason">Bekor qilish sababi</label>
+          <textarea id="cancelReason" rows="2" placeholder="Masalan: To'lov cheki noto'g'ri"></textarea>
+        </div>
+        <div id="approveForm" class="form" hidden>
+          <label>Yuan o'tkazma cheki</label>
+          <input id="adminReceiptInput" type="file" accept="image/*" hidden />
+          <button id="pickAdminReceiptBtn" class="upload" type="button">
+            <img id="adminReceiptPreview" alt="Chek" hidden />
+            <span id="adminReceiptPlaceholder">📷 Chek rasmini yuklash</span>
+          </button>
+          <p class="hint">Tasdiqlashdan oldin yuan chekini yuklang — foydalanuvchiga yuboriladi.</p>
+        </div>
+        <div id="detailActions" class="actions"></div>
+      </div>
+    </div>
+
+    <div id="preloader" class="preloader" hidden>
+      <div class="box"><div class="spinner"></div><p id="preloaderText">Yuklanmoqda…</p></div>
+    </div>
+    <div id="imageViewer" class="viewer" hidden><img id="imageViewerImg" alt="" /></div>
+    <div id="toast" class="toast" hidden></div>
+
+    <script src="/admin-app.js?v=1"></script>
+  </body>
+</html>

@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="uz">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>Yuan Go</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="/styles.css?v=7" />
+  </head>
+  <body>
+    <div id="app" class="app">
+      <!-- HOME -->
+      <section class="screen active" data-screen="home">
+        <header class="home-header">
+          <div class="brand-block">
+            <img class="app-logo" src="/yuan-go-logo.png" alt="Yuan Go" />
+            <div>
+              <h1 class="brand">Yuan Go</h1>
+              <p class="tagline" data-i18n="home.tagline">Xavfsiz • Tezkor • Ishonchli</p>
+            </div>
+          </div>
+          <div class="header-actions">
+            <button class="icon-btn home-theme-icon" id="homeThemeToggle" type="button" aria-label="Rejimni almashtirish">
+              <span id="homeThemeIcon">☾</span>
+            </button>
+            <button class="icon-btn notification-btn" data-go="notifications" type="button" aria-label="Bildirishnomalar">
+              <svg viewBox="0 0 24 24" width="19" height="19" fill="none"><path d="M6 9a6 6 0 1 1 12 0c0 3.2 1.2 4.6 1.8 5.2H4.2C4.8 13.6 6 12.2 6 9Z" stroke="currentColor" stroke-width="1.8"/><path d="M10 18a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <span class="badge-dot" id="notificationBadge">0</span>
+            </button>
+          </div>
+        </header>
+
+        <div class="content home-content">
+          <div class="welcome-row">
+            <button class="welcome-avatar" data-go="profile" type="button" aria-label="Profil">
+              <img id="homeAvatarImg" alt="" hidden />
+              <span id="homeAvatarText">JD</span>
+            </button>
+            <div class="welcome-copy">
+              <p data-i18n="home.greeting">Assalomu alaykum</p>
+              <h2 id="homeUserName">—</h2>
+            </div>
+          </div>
+
+          <button class="rate-hero" data-go="rate-stats" type="button" aria-label="Kurs statistikasini ochish">
+            <span class="rate-map" aria-hidden="true"></span>
+            <div class="rate-head">
+              <div class="rate-caption">
+                <span class="live-dot"></span>
+                <span data-i18n="home.liveRate">BUGUNGI KURS</span>
+                <b>LIVE</b>
+              </div>
+            </div>
+            <div class="rate-main">
+              <p class="rate-value">1 CNY <b>=</b> <span id="rateValue">1,080</span> <small>UZS</small></p>
+              <div class="rate-yuan-coin" aria-hidden="true">
+                <span>¥</span>
+              </div>
+            </div>
+            <svg class="rate-curve" viewBox="0 0 390 92" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="homeCurveFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#00e676" stop-opacity=".25"/>
+                  <stop offset="1" stop-color="#00e676" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path class="rate-curve-fill" d="M145 92 C166 79 173 87 187 68 S213 79 228 58 S255 64 268 44 S292 50 306 30 S336 32 352 17 S373 15 390 3 V92Z"/>
+              <path class="rate-curve-line" d="M145 92 C166 79 173 87 187 68 S213 79 228 58 S255 64 268 44 S292 50 306 30 S336 32 352 17 S373 15 390 3"/>
+            </svg>
+            <div class="rate-footer" id="rateUpdated">
+              <span class="update-icon">◷</span>
+              <span data-i18n="home.updated">Oxirgi yangilanish:</span>
+              <time id="rateUpdatedAt">30.07.2026, 01:30</time>
+              <span class="rate-open-hint">Statistika ›</span>
+            </div>
+          </button>
+
+          <div class="home-limits">
+            <div class="limit-item green">
+              <span class="stat-ico">↓</span>
+              <span class="muted" data-i18n="home.min">Minimum</span>
+              <strong id="homeMinCny">30 CNY</strong>
+            </div>
+            <div class="limit-item blue">
+              <span class="stat-ico">↑</span>
+              <span class="muted" data-i18n="home.max">Maksimum</span>
+              <strong id="homeMaxCny">500 CNY</strong>
+            </div>
+            <div class="limit-item violet">
+              <span class="stat-ico">%</span>
+              <span class="muted" data-i18n="home.fee">Komissiya</span>
+              <strong id="homeCommission">0%</strong>
+            </div>
+            <div class="limit-item orange">
+              <span class="stat-ico">◷</span>
+              <span class="muted" data-i18n="home.hours">Ish vaqti</span>
+              <strong id="homeWorkHours">07:00–23:00</strong>
+            </div>
+          </div>
+
+          <button class="cta-buy" data-go="buy" type="button">
+            <span class="cta-glow" aria-hidden="true"></span>
+            <span class="cta-ico">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.7"/>
+                <path d="M9 7.7h6M12 7.7v8.6M9.2 11.2h5.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                <path d="m7 16.2 2.2 2.1 2.5-2.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <span class="cta-text">
+              <strong data-i18n="home.buy">Yuan sotib olish</strong>
+              <small data-i18n="home.buySub">Tez, xavfsiz va qulay</small>
+            </span>
+            <span class="cta-arrow">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m9 6 6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+          </button>
+
+          <div class="section-head">
+            <h2 data-i18n="home.recent">Oxirgi xaridlar</h2>
+            <button class="link-btn" data-go="purchases" type="button" data-i18n="home.seeAll">Barchasini ko‘rish ›</button>
+          </div>
+          <div class="home-purchase-list" id="homePurchaseList"></div>
+
+          <div class="security-banner">
+            <span class="security-icon">✓</span>
+            <div>
+              <strong data-i18n="home.securityTitle">Sizning xavfsizligingiz biz uchun muhim</strong>
+              <p data-i18n="home.securityText">To‘lovlaringiz zamonaviy himoya tizimlari bilan xavfsiz saqlanadi</p>
+            </div>
+          </div>
+
+          <div class="home-reviews" id="homeReviews" hidden>
+            <div class="section-head">
+              <h2 data-i18n="home.reviews">Mijozlar fikri</h2>
+              <a class="link-btn" href="https://t.me/Yuan_Go" target="_blank" rel="noopener">@Yuan_Go ›</a>
+            </div>
+            <div class="review-carousel" id="reviewCarousel">
+              <span class="review-mark" aria-hidden="true">“</span>
+              <div class="review-slide" id="reviewSlide">
+                <div class="review-stars" aria-hidden="true">★★★★★</div>
+                <p class="review-quote" id="reviewQuote"></p>
+                <div class="review-meta">
+                  <div class="review-user">
+                    <span class="review-avatar" id="reviewAvatar">Y</span>
+                    <div>
+                      <strong id="reviewAuthor"></strong>
+                      <small id="reviewMeta"></small>
+                    </div>
+                  </div>
+                  <span class="review-badge">Yuan Go</span>
+                </div>
+              </div>
+              <div class="review-dots" id="reviewDots"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RATE STATISTICS -->
+      <section class="screen" data-screen="rate-stats">
+        <header class="topbar">
+          <button class="icon-btn back" data-go="home" type="button">‹</button>
+          <h1>Kurs statistikasi</h1>
+          <span class="topbar-spacer"></span>
+        </header>
+        <div class="content rate-stats-content">
+          <div class="rate-stats-summary">
+            <span>Joriy kurs</span>
+            <strong>1 CNY = 1,080 UZS</strong>
+            <small><b>↗ +0.24%</b> bugungi o‘zgarish</small>
+          </div>
+          <div class="rate-chart-card">
+            <div class="rate-chart-head">
+              <div>
+                <h2>Kurs dinamikasi</h2>
+                <p>So‘nggi 7 kun</p>
+              </div>
+              <span>1,080 UZS</span>
+            </div>
+            <div class="rate-periods">
+              <button class="active" type="button">7 kun</button>
+              <button type="button">1 oy</button>
+              <button type="button">3 oy</button>
+            </div>
+            <div class="rate-chart-area">
+              <div class="chart-grid-lines"><i></i><i></i><i></i><i></i></div>
+              <svg viewBox="0 0 360 180" preserveAspectRatio="none" aria-label="Yuan kursi grafigi">
+                <defs>
+                  <linearGradient id="detailChartFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#00e676" stop-opacity=".32"/>
+                    <stop offset="1" stop-color="#00e676" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <path class="detail-chart-fill" d="M0 148 C28 132 48 138 72 116 S110 124 139 90 S180 112 207 74 S250 82 277 52 S322 64 360 22 V180 H0Z"/>
+                <path class="detail-chart-line" d="M0 148 C28 132 48 138 72 116 S110 124 139 90 S180 112 207 74 S250 82 277 52 S322 64 360 22"/>
+                <circle cx="360" cy="22" r="5"/>
+              </svg>
+              <div class="chart-labels"><span>24-iyl</span><span>26-iyl</span><span>28-iyl</span><span>30-iyl</span></div>
+            </div>
+          </div>
+          <div class="rate-metrics">
+            <div><span>Haftalik minimum</span><strong>1,062 UZS</strong></div>
+            <div><span>Haftalik maksimum</span><strong>1,084 UZS</strong></div>
+            <div><span>O‘rtacha kurs</span><strong>1,073 UZS</strong></div>
+            <div><span>O‘zgarish</span><strong class="positive">+1.69%</strong></div>
+          </div>
+          <p class="rate-chart-note">Kurs ma’lumotlari muntazam yangilanadi. Xarid vaqtida bosh sahifadagi joriy kurs qo‘llanadi.</p>
+        </div>
+      </section>
+
+      <!-- BUY -->
+      <section class="screen" data-screen="buy">
+        <header class="topbar">
+          <button class="icon-btn back" data-go="home" type="button">‹</button>
+          <h1>Yuan sotib olish</h1>
+          <span class="topbar-spacer"></span>
+        </header>
+        <div class="content">
+          <label class="field">
+            <span>Miqdor (CNY)</span>
+            <input id="cnyAmount" type="number" inputmode="decimal" value="100" min="30" max="500" />
+            <small class="field-error" id="amountError" hidden>
+              Bunday miqdor mumkin emas. Eng kam 30 CNY, eng ko‘p 500 CNY.
+            </small>
+          </label>
+
+          <div class="soft-card calc">
+            <div class="row"><span>Kurs</span><strong id="buyRate">1,080 UZS</strong></div>
+            <div class="row"><span>Komissiya</span><strong class="ok">0%</strong></div>
+            <div class="row total"><span>To‘lov</span><strong id="uzsTotal">540,000 UZS</strong></div>
+          </div>
+
+          <h2 class="section-title">Kartani tanlang</h2>
+          <div class="card-list" id="cardList"></div>
+
+          <button class="btn primary lg" id="paidBtn" type="button">O‘tkazish</button>
+        </div>
+      </section>
+
+      <!-- RECEIPT -->
+      <section class="screen" data-screen="receipt">
+        <header class="topbar">
+          <button class="icon-btn back" data-go="buy" type="button">‹</button>
+          <h1>Chek yuborish</h1>
+          <span class="topbar-spacer"></span>
+        </header>
+        <div class="content">
+          <p class="hint-text">O‘tkazma chekining skrinshotini yuklang.</p>
+          <div class="upload-box" id="receiptBox">
+            <img id="receiptPreview" alt="" hidden />
+            <div class="upload-placeholder" id="receiptPlaceholder">
+              <span class="plus">＋</span>
+              <p>Chek rasmini tanlang</p>
+            </div>
+          </div>
+          <input id="receiptInput" type="file" accept="image/*" hidden />
+          <button class="btn ghost" id="changeReceiptBtn" type="button">Rasmni o‘zgartirish</button>
+          <label class="field">
+            <span>Izoh (ixtiyoriy)</span>
+            <textarea id="receiptNote" rows="3" placeholder="Qo‘shimcha ma’lumot..."></textarea>
+          </label>
+          <button class="btn primary lg" id="receiptNextBtn" type="button">Keyingi</button>
+        </div>
+      </section>
+
+      <!-- QR SELECT -->
+      <section class="screen" data-screen="qr-select">
+        <header class="topbar">
+          <button class="icon-btn back" data-go="receipt" type="button">‹</button>
+          <h1>Alipay QR</h1>
+          <span class="topbar-spacer"></span>
+        </header>
+        <div class="content">
+          <p class="hint-text" id="qrSelectHint">Yuan qabul qilish uchun bitta QR kodni tanlang.</p>
+          <div class="qr-select-list" id="qrSelectList"></div>
+          <button class="upload-dashed" id="newQrPickBtn" type="button">＋ Yangi QR qo‘shish</button>
+          <button class="btn primary lg" id="qrNextBtn" type="button">Keyingi</button>
+        </div>
+      </section>
+
+      <!-- CONFIRM -->
+      <section class="screen" data-screen="confirm">
+        <header class="topbar">
+          <button class="icon-btn back" data-go="qr-select" type="button">‹</button>
+          <h1>Yakuniy tasdiq</h1>
+          <span class="topbar-spacer"></span>
+        </header>
+        <div class="content">
+          <div class="soft-card">
+            <div class="row"><span>Tranzaksiya ID</span><strong id="confirmTxId">TX000154</strong></div>
+            <div class="row"><span>Sana</span><strong id="confirmDate">30.07.2026, 02:40</strong></div>
+            <div class="row"><span>Miqdor</span><strong id="confirmCny">500 CNY</strong></div>
+            <div class="row"><span>To‘lov</span><strong id="confirmUzs">540,000 UZS</strong></div>
+            <div class="row"><span>Karta</span><strong id="confirmCard">Uzcard</strong></div>
+          </div>
+          <div class="confirmation-proofs" id="confirmAttachments">
+            <button class="confirmation-proof" type="button" data-confirm-image="receipt">
+              <img id="confirmReceiptImage" alt="To‘lov cheki" />
+              <span>To‘lov cheki</span>
+            </button>
+            <button class="confirmation-proof" type="button" data-confirm-image="qr">
+              <img id="confirmQrImage" alt="Alipay QR" />
+              <span>Alipay QR</span>
+            </button>
+          </div>
+          <p class="hint-text">Ma’lumotlar tasdiqlangach, yuan Alipay QR ga yuboriladi.</p>
+          <button class="btn primary lg" id="confirmBtn" type="button">Tasdiqlash</button>
+        </div>
+      </section>
+
+      <!-- PROGRESS -->
+      <section class="screen" data-screen="progress">
+        <header class="topbar">
+          <button class="icon-btn back" data-go="home" type="button">‹</button>
+          <h1>Jarayonda</h1>
+          <span class="topbar-spacer"></span>
+        </header>
+        <div class="content center">
+          <div class="status-icon wait">⏳</div>
+          <h2>Tranzaksiya jarayonda</h2>
+          <ul class="steps" id="progressSteps">
+            <li class="done">Pul tekshirilmoqda</li>
+            <li class="done">Chek tekshirildi</li>
+            <li class="active">Tasdiqlanishi kutilmoqda</li>
+            <li>Yuan yuborilmoqda</li>
+            <li>Yakunlandi</li>
+          </ul>
+          <button class="btn ghost" data-go="tx-detail" type="button">Tafsilotni ko‘rish</button>
+        </div>
+      </section>
+
+      <!-- TX DETAIL -->
+      <section class="screen" data-screen="tx-detail">
+        <header class="topbar">
+          <button class="icon-btn back" data-go="transactions" type="button">‹</button>
+          <h1 data-i18n="transaction.title">Tranzaksiya</h1>
+          <span class="topbar-spacer"></span>
+        </header>
+        <div class="content">
+          <div class="transaction-status-card" id="txStatusPanel">
+            <div class="transaction-status-icon" id="txStatusIcon">✓</div>
+            <div>
+              <h2 id="txStatusTitle">Muvaffaqiyatli</h2>
+              <p id="txStatusMessage"></p>
+            </div>
+          </div>
+          <div class="soft-card" id="txDetailCard"></div>
+          <div class="transaction-receipt" id="txReceipt" hidden></div>
+        </div>
+      </section>
+
+      <!-- CANCELLED -->
+      <section class="screen" data-screen="cancelled">
+        <header class="topbar">
+          <span class="topbar-spacer"></span>
+          <h1>Bekor qilindi</h1>
+          <span class="topbar-spacer"></span>
+        </header>
+        <div class="content center">
+          <div class="status-icon bad">✕</div>
+          <h2>Tranzaksiya bekor qilindi</h2>
+          <p class="hint-text">Sabab: Pul tushmadi</p>
+          <button class="btn primary lg" data-go="buy" type="button">Qayta yuborish</button>
+          <button class="btn ghost" data-go="home" type="button">Bosh sahifaga</button>
+        </div>
+      </section>
+
+      <!-- COMPLETED -->
+      <section class="screen" data-screen="completed">
+        <header class="topbar">
+          <span class="topbar-spacer"></span>
+          <h1>Yakunlandi</h1>
+          <span class="topbar-spacer"></span>
+        </header>
+        <div class="content center">
+          <div class="status-icon good">✓</div>
+          <h2 id="completedMsg">500 CNY muvaffaqiyatli yuborildi!</h2>
+          <p class="hint-text" id="completedMeta"></p>
+          <button class="btn primary lg" data-go="home" type="button">Bosh sahifa</button>
+          <button class="btn ghost" id="demoCompleteBtn" type="button">Demo: yakunlash</button>
+        </div>
+      </section>
+
+      <!-- TRANSACTIONS -->
+      <section class="screen" data-screen="transactions">
+        <header class="topbar">
+          <span class="topbar-spacer"></span>
+          <h1 data-i18n="transactions.mine">Tranzaksiyalarim</h1>
+          <span class="topbar-spacer"></span>
+        </header>
+        <div class="content">
+          <div class="tabs" id="txTabs">
+            <button class="tab active" data-filter="all" type="button" data-i18n="filter.all">Hammasi</button>
+            <button class="tab" data-filter="progress" type="button" data-i18n="filter.progress">Jarayonda</button>
+            <button class="tab" data-filter="cancelled" type="button" data-i18n="filter.cancelled">Bekor qilingan</button>
+            <button class="tab" data-filter="done" type="button" data-i18n="filter.done">Muvaffaqiyatli</button>
+          </div>
+          <div class="tx-list" id="txList"></div>
+        </div>
+      </section>
+
+      <!-- ALL SUCCESSFUL PURCHASES -->
+      <section class="screen" data-screen="purchases">
+        <header class="topbar">
+          <button class="icon-btn back" data-go="home" type="button">‹</button>
+          <h1 data-i18n="purchases.title">Barcha xaridlar</h1>
+          <span class="topbar-spacer"></span>
+        </header>
+        <div class="content">
+          <p class="hint-text" data-i18n="purchases.subtitle">So‘nggi muvaffaqiyatli xaridlar</p>
+          <div class="home-purchase-list" id="allPurchaseList"></div>
+        </div>
+      </section>
+
+      <!-- QR CODES -->
+      <section class="screen" data-screen="qrs">
+        <header class="topbar">
+          <span class="topbar-spacer"></span>
+          <h1>QR kodlarim</h1>
+          <span class="topbar-spacer"></span>
+        </header>
+        <div class="content">
+          <div class="qr-list" id="qrList"></div>
+          <button class="btn primary lg" id="addQrBtn" type="button" data-i18n="qr.add">＋ Yangi QR qo‘shish</button>
+          <input id="qrImageInput" type="file" accept="image/*" hidden />
+        </div>
+      </section>
+
+      <!-- NOTIFICATIONS -->
+      <section class="screen" data-screen="notifications">
+        <header class="topbar">
+          <button class="icon-btn back" data-go="home" type="button">‹</button>
+          <h1 data-i18n="notifications.title">Bildirishnomalar</h1>
+          <span class="topbar-spacer"></span>
+        </header>
+        <div class="content">
+          <div class="notification-list" id="notificationList"></div>
+        </div>
+      </section>
+
+      <!-- PROFILE -->
+      <section class="screen" data-screen="profile">
+        <header class="topbar">
+          <span class="topbar-spacer"></span>
+          <h1 data-i18n="profile.title">Profil</h1>
+          <span class="topbar-spacer"></span>
+        </header>
+        <div class="content profile-content">
+          <div class="profile-avatar-wrap">
+            <button class="avatar-btn" id="avatarBtn" type="button">
+              <img id="avatarImg" alt="" hidden />
+              <span class="avatar-fallback" id="avatar">YG</span>
+              <span class="avatar-edit" aria-hidden="true">📷</span>
+            </button>
+            <input id="avatarInput" type="file" accept="image/*" hidden />
+            <p class="muted avatar-hint" data-i18n="profile.avatarHint">Rasm qo‘yish ixtiyoriy</p>
+          </div>
+
+          <div class="profile-identity">
+            <h2 id="profileFullName">Foydalanuvchi</h2>
+            <p class="profile-unique" id="pId">—</p>
+          </div>
+
+          <div class="profile-phone-card">
+            <span class="profile-phone-icon">☎</span>
+            <div>
+              <small data-i18n="profile.phone">Telefon</small>
+              <strong id="pPhone">—</strong>
+            </div>
+          </div>
+
+          <div class="menu-list profile-menu">
+            <button type="button" data-go="settings">
+              <span><b class="profile-menu-icon">⚙</b><span data-i18n="profile.settings">Sozlamalar</span></span>
+              <span class="menu-chevron">›</span>
+            </button>
+            <button type="button" data-go="stats">
+              <span><b class="profile-menu-icon">▥</b><span data-i18n="profile.stats">Statistika</span></span>
+              <span class="menu-chevron">›</span>
+            </button>
+            <button type="button" data-go="help">
+              <span><b class="profile-menu-icon">?</b><span data-i18n="profile.help">Yordam</span></span>
+              <span class="menu-chevron">›</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="screen" data-screen="settings">
+        <header class="topbar">
+          <button class="icon-btn back" data-go="profile" type="button">‹</button>
+          <h1 data-i18n="settings.title">Sozlamalar</h1>
+          <span class="topbar-spacer"></span>
+        </header>
+        <div class="content settings-content">
+          <div class="settings-card">
+            <div class="settings-card-head">
+              <span class="settings-card-icon">✎</span>
+              <div>
+                <h2 data-i18n="settings.personal">Shaxsiy ma’lumotlar</h2>
+                <p data-i18n="settings.personalHint">Ism va aloqa ma’lumotlarini yangilang</p>
+              </div>
+            </div>
+            <div class="settings-fields">
+              <label class="field">
+                <span data-i18n="profile.firstName">Ism</span>
+                <input id="settingsFirstName" type="text" maxlength="40" />
+              </label>
+              <label class="field">
+                <span data-i18n="profile.lastName">Familiya</span>
+                <input id="settingsLastName" type="text" maxlength="40" />
+              </label>
+              <label class="field settings-field-full">
+                <span data-i18n="profile.phone">Telefon</span>
+                <input id="settingsPhone" type="tel" inputmode="tel" maxlength="20" placeholder="+998 90 123 45 67" />
+              </label>
+            </div>
+            <button class="btn primary lg" id="savePersonalBtn" type="button" data-i18n="settings.save">Saqlash</button>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-row">
+              <div class="settings-row-copy">
+                <span class="settings-row-icon">◎</span>
+                <div>
+                  <strong data-i18n="profile.language">Til tanlash</strong>
+                  <small data-i18n="settings.languageHint">Ilova tilini o‘zgartirish</small>
+                </div>
+              </div>
+              <button class="settings-value-btn" id="openLangBtn" type="button">
+                <span id="langValue">O‘zbek</span> ›
+              </button>
+            </div>
+            <div class="settings-row">
+              <div class="settings-row-copy">
+                <span class="settings-row-icon">♟</span>
+                <div>
+                  <strong data-i18n="settings.notifications">Bildirishnomalar</strong>
+                  <small data-i18n="settings.notificationHint">Tranzaksiya yangiliklarini olish</small>
+                </div>
+              </div>
+              <label class="switch">
+                <input id="notifToggle" type="checkbox" checked />
+                <span></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <p class="section-title" data-i18n="settings.theme">Rejim</p>
+            <div class="theme-switch" id="themeSwitch">
+              <button type="button" data-theme-pick="light" data-i18n="settings.light">Yorug‘</button>
+              <button type="button" data-theme-pick="dark" data-i18n="settings.dark">Tungi</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STATS -->
+      <section class="screen" data-screen="stats">
+        <header class="topbar">
+          <button class="icon-btn back" data-go="profile" type="button">‹</button>
+          <h1 data-i18n="stats.title">Statistika</h1>
+          <span class="topbar-spacer"></span>
+        </header>
+        <div class="content stats-content">
+          <div class="stats-overview">
+            <div class="stat-card green">
+              <span class="muted" data-i18n="stats.total">Jami</span>
+              <strong id="statTotal">0</strong>
+            </div>
+            <div class="stat-card blue">
+              <span class="muted" data-i18n="stats.done">Yakunlangan</span>
+              <strong id="statDone">0</strong>
+            </div>
+            <div class="stat-card orange">
+              <span class="muted" data-i18n="stats.progress">Jarayonda</span>
+              <strong id="statProgress">0</strong>
+            </div>
+            <div class="stat-card violet">
+              <span class="muted" data-i18n="stats.volume">Hajm (CNY)</span>
+              <strong id="statVolume">0</strong>
+            </div>
+          </div>
+          <div class="stats-chart-card">
+            <div class="stats-section-head">
+              <div>
+                <h2 data-i18n="stats.chartTitle">6 oylik faollik</h2>
+                <p data-i18n="stats.chartHint">Muvaffaqiyatli CNY hajmi</p>
+              </div>
+              <strong id="statChartTotal">0 CNY</strong>
+            </div>
+            <div class="stats-chart" id="statsChart"></div>
+          </div>
+          <div class="stats-chart-card">
+            <div class="stats-section-head">
+              <div>
+                <h2>Oxirgi 7 kun</h2>
+                <p>Kunlik muvaffaqiyatli xaridlar</p>
+              </div>
+              <strong id="statWeekTotal">0 CNY</strong>
+            </div>
+            <div class="stats-chart" id="statsWeekChart"></div>
+          </div>
+          <div class="stats-chart-card">
+            <h2 data-i18n="stats.details">Batafsil</h2>
+            <div class="stats-detail-row">
+              <span data-i18n="stats.successRate">Muvaffaqiyat darajasi</span>
+              <strong id="statSuccessRate">0%</strong>
+            </div>
+            <div class="stats-progress"><span id="statSuccessBar"></span></div>
+            <div class="stats-detail-row">
+              <span data-i18n="stats.uzsVolume">Jami to‘lov</span>
+              <strong id="statUzsVolume">0 UZS</strong>
+            </div>
+            <div class="stats-detail-row">
+              <span data-i18n="stats.average">O‘rtacha xarid</span>
+              <strong id="statAverage">0 CNY</strong>
+            </div>
+            <div class="stats-detail-row">
+              <span data-i18n="stats.cancelled">Bekor qilingan</span>
+              <strong id="statCancelled">0</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LANGUAGE SHEET -->
+      <div class="sheet-overlay" id="langSheet" hidden>
+        <div class="sheet">
+          <div class="sheet-handle"></div>
+          <h3 data-i18n="profile.language">Til tanlash</h3>
+          <div class="lang-list">
+            <button type="button" data-lang="uz">O‘zbekcha</button>
+            <button type="button" data-lang="ru">Русский</button>
+            <button type="button" data-lang="en">English</button>
+          </div>
+          <button class="btn ghost lg" id="closeLangBtn" type="button" data-i18n="common.close">Yopish</button>
+        </div>
+      </div>
+
+      <!-- QR ACTIONS -->
+      <div class="sheet-overlay" id="qrActionSheet" hidden>
+        <div class="sheet">
+          <div class="sheet-handle"></div>
+          <h3 id="qrActionTitle">QR</h3>
+          <button class="btn ghost lg" id="editQrBtn" type="button" data-i18n="qr.edit">Tahrirlash</button>
+          <button class="btn danger lg" id="deleteQrBtn" type="button" data-i18n="qr.delete">O‘chirish</button>
+          <button class="btn ghost lg" id="closeQrActionBtn" type="button" data-i18n="common.close">Yopish</button>
+        </div>
+      </div>
+
+      <!-- QR EDITOR -->
+      <div class="sheet-overlay" id="qrEditorSheet" hidden>
+        <div class="sheet qr-editor-sheet">
+          <div class="sheet-handle"></div>
+          <h3 id="qrEditorTitle" data-i18n="qr.nameTitle">QR nomini kiriting</h3>
+          <button class="qr-editor-preview" id="replaceQrImageBtn" type="button">
+            <img id="qrEditorPreview" alt="QR" />
+            <span data-i18n="qr.replaceImage">Rasmni almashtirish</span>
+          </button>
+          <label class="field">
+            <span data-i18n="qr.name">QR nomi</span>
+            <input id="qrNameInput" type="text" maxlength="30" placeholder="Masalan: Asosiy Alipay" />
+          </label>
+          <button class="btn primary lg" id="saveQrBtn" type="button" data-i18n="qr.save">Saqlash</button>
+          <button class="btn ghost lg" id="cancelQrEditorBtn" type="button" data-i18n="common.close">Yopish</button>
+        </div>
+      </div>
+
+      <!-- REFERRALS -->
+      <section class="screen" data-screen="referrals">
+        <header class="topbar">
+          <button class="icon-btn back" data-go="home" type="button">‹</button>
+          <h1>Takliflar</h1>
+          <span class="topbar-spacer"></span>
+        </header>
+        <div class="content">
+          <div class="soft-card">
+            <p class="muted">Sizning havolangiz</p>
+            <div class="copy-row">
+              <code id="refLink">t.me/yuan_go_bot?start=ref</code>
+              <button class="btn small" id="copyRefBtn" type="button">Nusxa</button>
+            </div>
+          </div>
+          <div class="info-grid">
+            <div class="info-box">
+              <span class="muted">Takliflar</span>
+              <strong id="refCount">24</strong>
+            </div>
+            <div class="info-box">
+              <span class="muted">Bonus</span>
+              <strong id="refBonus">120,000 UZS</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- HELP -->
+      <section class="screen" data-screen="help">
+        <header class="topbar">
+          <button class="icon-btn back" data-go="profile" type="button">‹</button>
+          <h1 data-i18n="profile.help">Yordam</h1>
+          <span class="topbar-spacer"></span>
+        </header>
+        <div class="content help-content">
+          <div class="help-intro">
+            <span>?</span>
+            <div>
+              <h2>Ko‘p so‘raladigan savollar</h2>
+              <p>Kerakli savolni bosib javobni ko‘ring.</p>
+            </div>
+          </div>
+          <div class="faq-list">
+            <details>
+              <summary>Yuan qanday sotib olinadi?</summary>
+              <p>Miqdorni kiriting, kartaga to‘lov qiling, chek rasmini yuklang va yuan qabul qiladigan Alipay QR kodingizni tanlang.</p>
+            </details>
+            <details>
+              <summary>Tranzaksiya qancha vaqtda tasdiqlanadi?</summary>
+              <p>Odatda 5–30 daqiqa ichida. So‘rovlar 07:00–23:00 ish vaqti davomida ko‘rib chiqiladi.</p>
+            </details>
+            <details>
+              <summary>Qancha yuan sotib olish mumkin?</summary>
+              <p>Bir tranzaksiyada eng kam 30 CNY, eng ko‘p 500 CNY sotib olish mumkin. Komissiya 0%.</p>
+            </details>
+            <details>
+              <summary>Nima uchun Alipay QR kerak?</summary>
+              <p>Sotib olingan yuan aynan siz tanlagan Alipay QR hisobiga yuboriladi. QR tasviri aniq va to‘liq bo‘lishi kerak.</p>
+            </details>
+            <details>
+              <summary>Tranzaksiya nega bekor qilinishi mumkin?</summary>
+              <p>To‘lov tasdiqlanmasa, chek noto‘g‘ri bo‘lsa yoki QR o‘qilmasa tranzaksiya bekor qilinishi mumkin. Sababi tranzaksiya tafsilotida ko‘rsatiladi.</p>
+            </details>
+            <details>
+              <summary>Ma’lumotlarim xavfsizmi?</summary>
+              <p>Shaxsiy ma’lumotlar va to‘lov tasvirlari faqat xizmatni bajarish uchun ishlatiladi va himoyalangan tarzda saqlanadi.</p>
+            </details>
+          </div>
+          <a class="operator-card" href="https://t.me/jasurbek0521" target="_blank" rel="noopener">
+            <span class="operator-icon">✈</span>
+            <div>
+              <strong>Operator bilan bog‘lanish</strong>
+              <p>@jasurbek0521</p>
+            </div>
+            <b>›</b>
+          </a>
+          <p class="version">v1.0.0</p>
+        </div>
+      </section>
+
+      <!-- SUPPORT CHAT -->
+      <section class="screen" data-screen="support">
+        <header class="topbar">
+          <button class="icon-btn back" data-go="help" type="button">‹</button>
+          <h1>Operator</h1>
+          <span class="topbar-spacer"></span>
+        </header>
+        <div class="chat">
+          <div class="chat-log" id="chatLog">
+            <div class="bubble in">Assalomu alaykum! Qanday yordam berolaman?</div>
+          </div>
+          <form class="chat-input" id="chatForm">
+            <input id="chatText" type="text" placeholder="Xabar yozing..." autocomplete="off" />
+            <button class="btn small primary" type="submit">➤</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- BOTTOM NAV -->
+      <nav class="tabbar" id="tabbar">
+        <button class="tab-item active" data-tab="home" type="button" aria-label="Bosh sahifa">
+          <span class="nav-ico">
+            <svg viewBox="0 0 24 24" fill="none">
+              <defs>
+                <linearGradient id="navGradHome" x1="3" y1="3" x2="21" y2="21" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#1ee08a"/><stop offset="1" stop-color="#2f80ed"/>
+                </linearGradient>
+              </defs>
+              <path d="M4 10.4 11.3 4a1 1 0 0 1 1.4 0L20 10.4" stroke="url(#navGradHome)" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M5.6 12.4v6a1.8 1.8 0 0 0 1.8 1.8h9.2a1.8 1.8 0 0 0 1.8-1.8v-6" stroke="url(#navGradHome)" stroke-width="2.1" stroke-linecap="round"/>
+              <path d="M9.9 20v-4.1a1.3 1.3 0 0 1 1.3-1.3h1.6a1.3 1.3 0 0 1 1.3 1.3V20" stroke="url(#navGradHome)" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M16.4 5.2v-1h2v2.8" stroke="url(#navGradHome)" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </button>
+        <button class="tab-item" data-tab="transactions" type="button" aria-label="Tranzaksiyalarim">
+          <span class="nav-ico">
+            <svg viewBox="0 0 24 24" fill="none">
+              <defs>
+                <linearGradient id="navGradTx" x1="3" y1="3" x2="21" y2="21" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#1ee08a"/><stop offset="1" stop-color="#2f80ed"/>
+                </linearGradient>
+              </defs>
+              <path d="M5.1 7.4A8.2 8.2 0 1 1 4 14" stroke="url(#navGradTx)" stroke-width="2" stroke-linecap="round" stroke-dasharray="1.2 2.2"/>
+              <path d="M4 4.8v3.7h3.7" stroke="url(#navGradTx)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M12 7.5v5l3.3 2" stroke="url(#navGradTx)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </button>
+        <button class="tab-item transfer-item" data-tab="buy" type="button" aria-label="Yuan olish">
+          <span class="transfer-ring" aria-hidden="true"></span>
+          <span class="transfer-halo" aria-hidden="true"></span>
+          <span class="transfer-ico">
+            <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+              <path d="m12.5 8 7.5 8.6L27.5 8M13.3 19.8h13.4M20 18v13M13.3 25.4h13.4" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </button>
+        <button class="tab-item" data-tab="qrs" type="button" aria-label="QR kodlarim">
+          <span class="nav-ico">
+            <svg viewBox="0 0 24 24" fill="none">
+              <defs>
+                <linearGradient id="navGradQr" x1="3" y1="3" x2="21" y2="21" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#1ee08a"/><stop offset="1" stop-color="#2f80ed"/>
+                </linearGradient>
+              </defs>
+              <path d="M3.6 7.2V5.4a1.8 1.8 0 0 1 1.8-1.8h1.8M16.8 3.6h1.8a1.8 1.8 0 0 1 1.8 1.8v1.8M20.4 16.8v1.8a1.8 1.8 0 0 1-1.8 1.8h-1.8M7.2 20.4H5.4a1.8 1.8 0 0 1-1.8-1.8v-1.8" stroke="url(#navGradQr)" stroke-width="2" stroke-linecap="round"/>
+              <rect x="7" y="7" width="4.1" height="4.1" rx="1" stroke="url(#navGradQr)" stroke-width="1.8"/>
+              <rect x="13.2" y="7.3" width="3.5" height="3.5" rx="0.9" fill="url(#navGradQr)"/>
+              <rect x="7.3" y="13.2" width="3.5" height="3.5" rx="0.9" fill="url(#navGradQr)"/>
+              <path d="M13.2 13.2h1.7v1.7h-1.7zM15.2 15.2h1.7v1.7h-1.7zM13.2 16.9h1.4v1.4h-1.4zM16.2 13.2h1v1h-1z" fill="url(#navGradQr)"/>
+            </svg>
+          </span>
+        </button>
+        <button class="tab-item" data-tab="profile" type="button" aria-label="Profil">
+          <span class="nav-ico">
+            <svg viewBox="0 0 24 24" fill="none">
+              <defs>
+                <linearGradient id="navGradUser" x1="3" y1="3" x2="21" y2="21" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#1ee08a"/><stop offset="1" stop-color="#2f80ed"/>
+                </linearGradient>
+              </defs>
+              <circle cx="12" cy="8.1" r="3.9" stroke="url(#navGradUser)" stroke-width="2.1"/>
+              <path d="M4.9 19.6c.8-3.9 3.3-5.8 7.1-5.8s6.3 1.9 7.1 5.8" stroke="url(#navGradUser)" stroke-width="2.1" stroke-linecap="round"/>
+            </svg>
+          </span>
+        </button>
+      </nav>
+    </div>
+    <script src="/app.js?v=15"></script>
+  </body>
+</html>

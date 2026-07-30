@@ -1,0 +1,30 @@
+# Secrets & local data
+.env
+.env.local
+yuango.db
+yuango.db-*
+users.json
+users.json.bak
+uploads/*
+!uploads/.gitkeep
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# OS / IDE / logs
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/
+.cursor/
+
+# Deploy leftovers
+.vercel
+.netlify

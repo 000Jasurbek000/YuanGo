@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="uz">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Yuan Go — Admin Panel</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="/admin.css?v=13" />
+  </head>
+  <body>
+    <div id="deniedView" class="denied-screen" hidden>
+      <div class="denied-card">
+        <div class="denied-icon">⛔</div>
+        <h2>Ruxsat yo'q</h2>
+        <p>Professional panel faqat <b>super admin</b> uchun. Botga <code>/start</code> yuboring.</p>
+      </div>
+    </div>
+
+    <div id="panelView" class="admin-shell" hidden>
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          <span class="brand-mark">¥</span>
+          <div>
+            <strong>ADMIN PANEL</strong>
+            <small>Yuan Go</small>
+          </div>
+        </div>
+        <nav class="sidebar-nav">
+          <button class="nav-item is-active" type="button" data-page="dashboard">
+            <span class="nav-ico">▦</span> Dashboard
+          </button>
+          <button class="nav-item" type="button" data-page="transactions">
+            <span class="nav-ico">⇄</span> Tranzaksiyalar
+          </button>
+          <button class="nav-item" type="button" data-page="users">
+            <span class="nav-ico">👤</span> Foydalanuvchilar
+          </button>
+          <button class="nav-item" type="button" data-page="admins">
+            <span class="nav-ico">🛡</span> Adminlar
+          </button>
+          <button class="nav-item" type="button" data-page="reviews">
+            <span class="nav-ico">⭐</span> Sharhlar
+          </button>
+          <button class="nav-item" type="button" data-page="cards">
+            <span class="nav-ico">💳</span> Karta va hisoblar
+          </button>
+          <button class="nav-item" type="button" data-page="qrs">
+            <span class="nav-ico">▣</span> QR kodlar
+          </button>
+          <button class="nav-item" type="button" data-page="settings">
+            <span class="nav-ico">⚙</span> Sozlamalar
+          </button>
+          <button class="nav-item" type="button" data-page="messages">
+            <span class="nav-ico">✉</span> Xabarlar
+          </button>
+          <button class="nav-item" type="button" data-page="stats">
+            <span class="nav-ico">◔</span> Statistika
+          </button>
+        </nav>
+        <button id="logoutBtn" class="nav-item nav-logout" type="button">
+          <span class="nav-ico">⎋</span> Chiqish
+        </button>
+      </aside>
+
+      <div class="admin-body">
+        <header class="topbar">
+          <button id="sidebarToggle" class="icon-btn mobile-only" type="button">☰</button>
+          <h1 id="pageTitle">Dashboard</h1>
+          <div class="topbar-right">
+            <div class="date-chip" id="todayDate">—</div>
+            <button id="refreshBtn" class="icon-btn" type="button" title="Yangilash">⟳</button>
+            <div class="admin-chip">
+              <span class="admin-avatar">A</span>
+              <span>Admin</span>
+            </div>
+          </div>
+        </header>
+
+        <main class="content">
+          <!-- DASHBOARD -->
+          <section class="page is-active" data-page-view="dashboard">
+            <div class="stats-grid">
+              <article class="stat-card">
+                <div class="stat-ico blue">◷</div>
+                <div>
+                  <b id="statToday">0</b>
+                  <span>Bugungi tranzaksiyalar</span>
+                </div>
+              </article>
+              <article class="stat-card">
+                <div class="stat-ico orange">⏳</div>
+                <div>
+                  <b id="statProgress">0</b>
+                  <span>Kutilayotgan</span>
+                </div>
+              </article>
+              <article class="stat-card">
+                <div class="stat-ico green">✓</div>
+                <div>
+                  <b id="statDone">0</b>
+                  <span>Yakunlangan</span>
+                </div>
+              </article>
+              <article class="stat-card">
+                <div class="stat-ico red">✕</div>
+                <div>
+                  <b id="statCancelled">0</b>
+                  <span>Bekor qilingan</span>
+                </div>
+              </article>
+            </div>
+
+            <div class="dashboard-grid dashboard-grid-full">
+              <section class="panel">
+                <div class="panel-head">
+                  <h2>Kutilayotgan tranzaksiyalar</h2>
+                  <div class="filter-pills" id="dashFilters">
+                    <button class="pill is-active" type="button" data-status="progress">Kutilayotgan</button>
+                    <button class="pill" type="button" data-status="">Barchasi</button>
+                    <button class="pill" type="button" data-status="done">Yakunlangan</button>
+                    <button class="pill" type="button" data-status="cancelled">Bekor</button>
+                  </div>
+                </div>
+                <div class="table-wrap">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Foydalanuvchi</th>
+                        <th>Summa</th>
+                        <th>To'langan</th>
+                        <th>Karta</th>
+                        <th>Vaqt</th>
+                        <th>Holat</th>
+                        <th>Amallar</th>
+                      </tr>
+                    </thead>
+                    <tbody id="txTableBody"></tbody>
+                  </table>
+                  <div id="txEmpty" class="empty-state" hidden>Tranzaksiyalar yo'q</div>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <!-- TRANSACTIONS -->
+          <section class="page" data-page-view="transactions">
+            <div class="panel">
+              <div class="panel-head">
+                <h2>Barcha tranzaksiyalar</h2>
+                <div class="filter-pills" id="txFilters">
+                  <button class="pill is-active" type="button" data-status="">Barchasi</button>
+                  <button class="pill" type="button" data-status="progress">Kutilayotgan</button>
+                  <button class="pill" type="button" data-status="done">Yakunlangan</button>
+                  <button class="pill" type="button" data-status="cancelled">Bekor qilingan</button>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Foydalanuvchi</th>
+                      <th>Summa</th>
+                      <th>To'langan</th>
+                      <th>Karta</th>
+                      <th>Vaqt</th>
+                      <th>Holat</th>
+                      <th>Amallar</th>
+                    </tr>
+                  </thead>
+                  <tbody id="allTxTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- USERS -->
+          <section class="page" data-page-view="users">
+            <div class="panel">
+              <div class="panel-head"><h2>Foydalanuvchilar</h2></div>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>FIO</th>
+                      <th>Telegram</th>
+                      <th>Telefon</th>
+                      <th>Til</th>
+                      <th>Ro'yxat</th>
+                      <th>Oxirgi kirish</th>
+                      <th>Admin</th>
+                    </tr>
+                  </thead>
+                  <tbody id="usersTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- ADMINS -->
+          <section class="page" data-page-view="admins">
+            <div class="panel">
+              <div class="panel-head">
+                <h2>Oddiy adminlar</h2>
+                <button id="addAdminBtn" class="btn btn-approve" type="button" style="width:auto;padding:8px 14px">+ Admin qo'shish</button>
+              </div>
+              <div id="adminForm" class="form-panel" hidden>
+                <div class="form-grid">
+                  <label>Telegram ID
+                    <input id="adminTgId" type="text" inputmode="numeric" placeholder="Masalan: 6999323104" />
+                  </label>
+                  <label>FIO
+                    <input id="adminFio" type="text" maxlength="80" placeholder="Ism Familiya" />
+                  </label>
+                </div>
+                <p class="hint" style="margin:0 0 12px;padding:0">Qo'shilgan admin /start bosganda faqat Admin va Foydalanuvchi tugmalarini ko'radi.</p>
+                <div class="form-actions">
+                  <button id="cancelAdminBtn" class="btn btn-ghost" type="button">Bekor</button>
+                  <button id="saveAdminBtn" class="btn btn-approve" type="button">Saqlash</button>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Telegram ID</th>
+                      <th>FIO</th>
+                      <th>Username</th>
+                      <th>UID</th>
+                      <th>Amallar</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminsTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- REVIEWS -->
+          <section class="page" data-page-view="reviews">
+            <div class="panel">
+              <div class="panel-head">
+                <h2>Sharhlar</h2>
+                <button id="refreshReviewsBtn" class="btn btn-ghost" type="button" style="width:auto;padding:8px 14px">Yangilash</button>
+              </div>
+              <p class="hint" style="margin:0 12px 12px;padding:0">Foydalanuvchi yuborgan sharh darhol @Yuan_Go kanaliga chiqadi. Bu yerda ko‘rish va o‘chirish mumkin.</p>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Foydalanuvchi</th>
+                      <th>TX</th>
+                      <th>Sharh</th>
+                      <th>Vaqt</th>
+                      <th>Holat</th>
+                      <th>Amallar</th>
+                    </tr>
+                  </thead>
+                  <tbody id="reviewsTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- CARDS -->
+          <section class="page" data-page-view="cards">
+            <div class="panel">
+              <div class="panel-head">
+                <h2>Karta va hisoblar</h2>
+                <button id="addCardBtn" class="btn btn-approve" type="button" style="width:auto;padding:8px 14px">+ Karta qo'shish</button>
+              </div>
+              <div id="cardForm" class="form-panel" hidden>
+                <div class="form-grid">
+                  <label>Karta turi
+                    <select id="cardBrand">
+                      <option value="uzcard">Uzcard</option>
+                      <option value="humo">Humo</option>
+                      <option value="visa">Visa</option>
+                    </select>
+                  </label>
+                  <label>Karta nomi (foydalanuvchiga)
+                    <input id="cardTitle" type="text" maxlength="40" placeholder="Masalan: Asosiy Uzcard" />
+                  </label>
+                  <label>Karta raqami
+                    <input id="cardNumber" type="text" maxlength="23" placeholder="8600 1234 5678 9012" />
+                  </label>
+                  <label>Karta egasi FIO
+                    <input id="cardOwner" type="text" maxlength="60" placeholder="Jasurbek Davronov" />
+                  </label>
+                </div>
+                <div class="form-actions">
+                  <button id="cancelCardBtn" class="btn btn-ghost" type="button">Bekor</button>
+                  <button id="saveCardBtn" class="btn btn-approve" type="button">Saqlash</button>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Nomi</th>
+                      <th>Turi</th>
+                      <th>Raqam</th>
+                      <th>FIO</th>
+                      <th>Holat</th>
+                      <th>Amallar</th>
+                    </tr>
+                  </thead>
+                  <tbody id="cardsTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <section class="page" data-page-view="qrs">
+            <div class="panel">
+              <div class="panel-head"><h2>QR kodlar</h2></div>
+              <div class="form-panel" style="display:block">
+                <p style="margin:0;color:#64748b;font-size:14px;line-height:1.5">
+                  Har bir foydalanuvchi o‘z Alipay QR kodlarini Mini App ichida saqlaydi (maks. 5 ta).
+                  Tranzaksiya tafsilotida yuklangan QR ko‘rinadi. Markaziy QR katalogi keyingi versiyada qo‘shiladi.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- SETTINGS -->
+          <section class="page" data-page-view="settings">
+            <div class="panel">
+              <div class="panel-head"><h2>Sozlamalar</h2></div>
+              <div class="form-panel" style="display:block">
+                <div class="form-grid">
+                  <label>Kurs (1 CNY = UZS)
+                    <input id="setRate" type="number" min="1" />
+                  </label>
+                  <label>Minimal CNY
+                    <input id="setMin" type="number" min="1" />
+                  </label>
+                  <label>Maksimal CNY
+                    <input id="setMax" type="number" min="1" />
+                  </label>
+                  <label>Komissiya
+                    <input id="setCommission" type="text" placeholder="0%" />
+                  </label>
+                  <label>Ish vaqti
+                    <input id="setHours" type="text" placeholder="07:00–23:00" />
+                  </label>
+                </div>
+                <div class="form-actions">
+                  <button id="saveSettingsBtn" class="btn btn-approve" type="button">Saqlash</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="page" data-page-view="messages">
+            <div class="panel">
+              <div class="panel-head"><h2>Xabarlar</h2></div>
+              <div class="form-panel" style="display:block">
+                <p style="margin:0 0 12px;color:#64748b;font-size:14px">
+                  Ommaviy xabar hozircha o‘chirilgan. Foydalanuvchiga individual xabar tranzaksiya tafsilotidan emas, Telegram orqali yuboriladi.
+                </p>
+                <label>Operator username
+                  <input type="text" value="@YuanGoSupport" disabled />
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <!-- STATS -->
+          <section class="page" data-page-view="stats">
+            <div class="stats-grid" id="statsCards"></div>
+            <div class="dashboard-grid">
+              <section class="panel">
+                <div class="panel-head"><h2>Oxirgi 7 kun — hajm (CNY)</h2></div>
+                <div class="chart-wrap">
+                  <svg id="volumeChart" viewBox="0 0 560 220" preserveAspectRatio="none"></svg>
+                  <div class="chart-labels" id="volumeLabels"></div>
+                </div>
+              </section>
+              <section class="panel">
+                <div class="panel-head"><h2>Holat taqsimoti</h2></div>
+                <div class="status-bars" id="statusBars"></div>
+              </section>
+            </div>
+            <div class="dashboard-grid" style="margin-top:16px">
+              <section class="panel">
+                <div class="panel-head"><h2>Oxirgi faollik (kirishlar)</h2></div>
+                <div class="table-wrap">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>FIO</th>
+                        <th>Telegram</th>
+                        <th>Oxirgi kirish</th>
+                      </tr>
+                    </thead>
+                    <tbody id="recentUsersBody"></tbody>
+                  </table>
+                </div>
+              </section>
+              <section class="panel">
+                <div class="panel-head"><h2>So'nggi tranzaksiyalar</h2></div>
+                <div class="table-wrap">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Foydalanuvchi</th>
+                        <th>CNY</th>
+                        <th>Holat</th>
+                      </tr>
+                    </thead>
+                    <tbody id="recentTxBody"></tbody>
+                  </table>
+                </div>
+              </section>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <div id="sidebarBackdrop" class="sidebar-backdrop" hidden></div>
+
+    <div id="detailBackdrop" class="detail-backdrop" hidden></div>
+    <aside class="detail-drawer" id="detailPanel" hidden>
+      <div class="panel-head">
+        <h2>Tranzaksiya tafsiloti</h2>
+        <button id="detailCloseBtn" class="icon-btn" type="button" title="Yopish">✕</button>
+      </div>
+      <div id="detailEmpty" class="empty-state" hidden>
+        Tafsilotni ko'rish uchun jadvaldan tranzaksiyani tanlang
+      </div>
+      <div id="detailContent" hidden>
+        <div class="detail-meta" id="detailMeta"></div>
+        <div class="proof-row" id="detailProofs"></div>
+        <div id="cancelForm" class="form-block" hidden>
+          <label for="cancelReason">Bekor qilish sababi</label>
+          <textarea id="cancelReason" rows="2" placeholder="Masalan: To'lov cheki noto'g'ri"></textarea>
+        </div>
+        <div id="approveForm" class="form-block" hidden>
+          <label>Yuan o'tkazma cheki</label>
+          <input id="adminReceiptInput" type="file" accept="image/*" hidden />
+          <button id="pickAdminReceiptBtn" class="upload-box" type="button">
+            <img id="adminReceiptPreview" alt="Chek" hidden />
+            <span id="adminReceiptPlaceholder">📷 Chek rasmini yuklash</span>
+          </button>
+          <p class="hint">Tasdiqlashdan oldin yuan chekini yuklang — u foydalanuvchiga yuboriladi.</p>
+        </div>
+        <div class="detail-actions" id="detailActions"></div>
+      </div>
+    </aside>
+
+    <div id="preloader" class="preloader" hidden>
+      <div class="preloader-box">
+        <div class="spinner"></div>
+        <p id="preloaderText">Yuklanmoqda…</p>
+      </div>
+    </div>
+
+    <div id="imageViewer" class="image-viewer" hidden>
+      <img id="imageViewerImg" src="" alt="Rasm" />
+    </div>
+
+    <div id="toast" class="toast" hidden></div>
+
+    <script src="/admin.js?v=16"></script>
+  </body>
+</html>
