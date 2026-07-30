@@ -1915,8 +1915,23 @@ def run_bot() -> None:
     bot.infinity_polling(skip_pending=True, timeout=60)
 
 
+_services_started = False
+_services_lock = threading.Lock()
+
+
+def start_background_services() -> None:
+    """Passenger yoki lokal ishga tushirishda bot + cleanup (bir marta)."""
+    global _services_started
+    with _services_lock:
+        if _services_started:
+            return
+        _services_started = True
+        start_storage_cleanup_loop()
+        threading.Thread(target=run_bot, daemon=True).start()
+        print("Background services started (bot + storage cleanup)")
+
+
 if __name__ == "__main__":
-    start_storage_cleanup_loop()
-    threading.Thread(target=run_bot, daemon=True).start()
+    start_background_services()
     print(f"Yuan Go web: http://localhost:{PORT}")
     app.run(host="0.0.0.0", port=PORT, debug=False, use_reloader=False)
