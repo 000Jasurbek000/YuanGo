@@ -61,6 +61,8 @@ Telegram WebApp uchun HTTPS shart. Lokal uchun:
 main.py          # PRODUCTION: server / GitHub deploy (Passenger, /tmp lock)
 mainserver.py    # LOCAL: Windows/kompyuter test (ngrok, local lock)
 db.py            # SQLite
+locales/         # Bot tillari: uz.json, ru.json, en.json
+public/i18n/     # Mini App tillari: uz.json, ru.json, en.json
 public/          # Mini App + admin UI
 uploads/         # Yuklangan cheklar (gitignore)
 .env.example     # Namuna sozlamalar
