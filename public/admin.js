@@ -258,13 +258,14 @@ async function loadReviews() {
   if (!data.ok) return;
   const tbody = document.getElementById("reviewsTableBody");
   if (!data.reviews?.length) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#64748b">Sharhlar yo'q</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#64748b">Sharhlar yo'q</td></tr>`;
     return;
   }
   tbody.innerHTML = data.reviews
     .map((r) => {
       const text = String(r.text || "").replace(/</g, "&lt;");
       const short = text.length > 80 ? text.slice(0, 80) + "…" : text;
+      const onChannel = !!r.channel_message_id;
       return `
         <tr>
           <td><b>#${r.id}</b></td>
@@ -272,11 +273,17 @@ async function loadReviews() {
           <td>${r.tx_id || "—"}</td>
           <td title="${text}">${short}</td>
           <td>${r.created_at || "—"}</td>
+          <td>${
+            onChannel
+              ? '<span class="badge badge-done">Yuborilgan</span>'
+              : '<span class="badge badge-cancelled">Yo\'q</span>'
+          }</td>
           <td>${r.active ? '<span class="badge badge-done">Faol</span>' : '<span class="badge badge-cancelled">O\'chirilgan</span>'}</td>
-          <td>
+          <td style="white-space:nowrap">
             ${
               r.active
-                ? `<button class="act-btn no" type="button" data-review-del="${r.id}" title="O'chirish">✕</button>`
+                ? `<button class="act-btn yes" type="button" data-review-republish="${r.id}" title="Kanalga yuborish">↗</button>
+                   <button class="act-btn no" type="button" data-review-del="${r.id}" title="O'chirish">✕</button>`
                 : "—"
             }
           </td>
@@ -815,6 +822,27 @@ async function init() {
 
   document.getElementById("refreshReviewsBtn")?.addEventListener("click", loadReviews);
   document.getElementById("reviewsTableBody")?.addEventListener("click", async (e) => {
+    const republish = e.target.closest("[data-review-republish]");
+    if (republish) {
+      if (!confirm("Bu sharhni kanalga yuborasizmi?")) return;
+      showPreloader("Kanalga yuborilmoqda…");
+      try {
+        const data = await api(
+          `/api/admin/reviews/${republish.dataset.reviewRepublish}/republish`,
+          { method: "POST" }
+        );
+        if (data.ok) {
+          toast("Kanalga yuborildi");
+          loadReviews();
+        } else toast(data.error || "Yuborilmadi — REVIEWS_CHANNEL / bot adminligini tekshiring");
+      } catch (_) {
+        toast("Xatolik");
+      } finally {
+        hidePreloader();
+      }
+      return;
+    }
+
     const del = e.target.closest("[data-review-del]");
     if (!del) return;
     if (!confirm("Bu sharhni o'chirasizmi? Kanal xabari ham o'chiriladi (agar mumkin bo'lsa).")) return;

@@ -625,6 +625,15 @@ def delete_review(review_id: int) -> bool:
         return cur.rowcount > 0
 
 
+def set_review_channel_message_id(review_id: int, message_id: int | None) -> None:
+    with _lock:
+        _conn.execute(
+            "UPDATE reviews SET channel_message_id = ? WHERE id = ?",
+            (message_id, review_id),
+        )
+        _conn.commit()
+
+
 # ---------------------------------------------------------------- Stats
 
 def stats_detailed() -> dict:

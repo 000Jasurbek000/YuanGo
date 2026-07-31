@@ -1825,6 +1825,38 @@ def api_admin_reviews_delete(review_id: int):
     return jsonify(ok=True)
 
 
+@app.post("/api/admin/reviews/<int:review_id>/republish")
+def api_admin_reviews_republish(review_id: int):
+    """Saqlangan sharhni kanalga qayta yuborish (kanal sozlamasi keyin to'g'rilanganda)."""
+    if not _check_super_admin():
+        return jsonify(ok=False, error="forbidden"), 403
+    review = db.get_review(review_id)
+    if not review or not review.get("active"):
+        return jsonify(ok=False, error="not found"), 404
+
+    uname = (review.get("username") or "").strip()
+    display_user = f"@{uname}" if uname else "Mijoz"
+    chat_id = int(review.get("telegram_id") or OWNER_TELEGRAM_ID)
+    channel_text = t(chat_id, "review_channel").format(
+        username=display_user,
+        text=review.get("text") or "",
+        cny=f"{float(review.get('cny') or 0):g}",
+        tx_id=review.get("tx_id") or "",
+    )
+    try:
+        msg = bot.send_message(
+            REVIEWS_CHANNEL,
+            channel_text,
+            parse_mode="HTML",
+            disable_web_page_preview=True,
+        )
+        db.set_review_channel_message_id(review_id, msg.message_id)
+        return jsonify(ok=True, channel_message_id=msg.message_id)
+    except Exception as exc:
+        print(f"Kanalga qayta yuborish xato: {exc}")
+        return jsonify(ok=False, error=str(exc)), 500
+
+
 @app.post("/api/admin/tx/<tx_id>/approve")
 def api_admin_tx_approve(tx_id: str):
     if not _check_admin():
