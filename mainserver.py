@@ -42,9 +42,20 @@ WEBAPP_URL = os.getenv("WEBAPP_URL", f"http://localhost:{PORT}").strip()
 NGROK_AUTHTOKEN = os.getenv("NGROK_AUTHTOKEN", "").strip()
 OPERATOR_USERNAME = os.getenv("OPERATOR_USERNAME", "jasurbek0521").strip().lstrip("@")
 OWNER_TELEGRAM_ID = int(os.getenv("OWNER_TELEGRAM_ID", "1024063189") or "1024063189")
-REVIEWS_CHANNEL = os.getenv("REVIEWS_CHANNEL", "@Yuan_Go").strip()
-if REVIEWS_CHANNEL and not REVIEWS_CHANNEL.startswith("@"):
-    REVIEWS_CHANNEL = "@" + REVIEWS_CHANNEL
+def _parse_channel(value: str):
+    """@username yoki raqamli kanal ID (-100...)."""
+    raw = (value or "").strip()
+    if not raw:
+        return "@Yuan_Go"
+    if raw.startswith("@"):
+        return raw
+    # Raqamli chat_id (masalan -1001234567890)
+    if raw.lstrip("-").isdigit():
+        return int(raw)
+    return "@" + raw.lstrip("@")
+
+
+REVIEWS_CHANNEL = _parse_channel(os.getenv("REVIEWS_CHANNEL", "@Yuan_Go"))
 
 if not BOT_TOKEN:
     raise SystemExit("BOT_TOKEN topilmadi. .env faylini tekshiring.")
