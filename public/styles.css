@@ -3199,8 +3199,14 @@ html[data-theme="light"] .rate-hero .rate-footer time {
   font-size: 14px;
 }
 
-.rate-metrics .positive {
+.rate-metrics .positive,
+.rate-stats-summary .positive {
   color: var(--green);
+}
+
+.rate-metrics .negative,
+.rate-stats-summary .negative {
+  color: #ff5c5c;
 }
 
 .rate-chart-note {

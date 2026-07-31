@@ -55,7 +55,7 @@
               </div>
             </div>
             <div class="rate-main">
-              <p class="rate-value">1 CNY <b>=</b> <span id="rateValue">1,080</span> <small>UZS</small></p>
+              <p class="rate-value">1 CNY <b>=</b> <span id="rateValue">1,840</span> <small>UZS</small></p>
               <div class="rate-yuan-coin" aria-hidden="true">
                 <span>¥</span>
               </div>
@@ -172,45 +172,45 @@
         <div class="content rate-stats-content">
           <div class="rate-stats-summary">
             <span>Joriy kurs</span>
-            <strong>1 CNY = 1,080 UZS</strong>
-            <small><b>↗ +0.24%</b> bugungi o‘zgarish</small>
+            <strong id="rateStatsCurrent">1 CNY = 1,840 UZS</strong>
+            <small id="rateStatsChange"><b>→ 0%</b> davr ichida</small>
           </div>
           <div class="rate-chart-card">
             <div class="rate-chart-head">
               <div>
                 <h2>Kurs dinamikasi</h2>
-                <p>So‘nggi 7 kun</p>
+                <p id="rateChartPeriodLabel">So‘nggi 7 kun</p>
               </div>
-              <span>1,080 UZS</span>
+              <span id="rateChartCurrent">1,840 UZS</span>
             </div>
-            <div class="rate-periods">
-              <button class="active" type="button">7 kun</button>
-              <button type="button">1 oy</button>
-              <button type="button">3 oy</button>
+            <div class="rate-periods" id="ratePeriods">
+              <button class="active" type="button" data-rate-days="7">7 kun</button>
+              <button type="button" data-rate-days="30">1 oy</button>
+              <button type="button" data-rate-days="90">3 oy</button>
             </div>
             <div class="rate-chart-area">
               <div class="chart-grid-lines"><i></i><i></i><i></i><i></i></div>
-              <svg viewBox="0 0 360 180" preserveAspectRatio="none" aria-label="Yuan kursi grafigi">
+              <svg id="rateChartSvg" viewBox="0 0 360 180" preserveAspectRatio="none" aria-label="Yuan kursi grafigi">
                 <defs>
                   <linearGradient id="detailChartFill" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0" stop-color="#00e676" stop-opacity=".32"/>
                     <stop offset="1" stop-color="#00e676" stop-opacity="0"/>
                   </linearGradient>
                 </defs>
-                <path class="detail-chart-fill" d="M0 148 C28 132 48 138 72 116 S110 124 139 90 S180 112 207 74 S250 82 277 52 S322 64 360 22 V180 H0Z"/>
-                <path class="detail-chart-line" d="M0 148 C28 132 48 138 72 116 S110 124 139 90 S180 112 207 74 S250 82 277 52 S322 64 360 22"/>
-                <circle cx="360" cy="22" r="5"/>
+                <path class="detail-chart-fill" id="rateChartFill" d="M0 90 H360 V180 H0Z"/>
+                <path class="detail-chart-line" id="rateChartLine" d="M0 90 H360"/>
+                <circle id="rateChartDot" cx="360" cy="90" r="5"/>
               </svg>
-              <div class="chart-labels"><span>24-iyl</span><span>26-iyl</span><span>28-iyl</span><span>30-iyl</span></div>
+              <div class="chart-labels" id="rateChartLabels"><span>—</span><span>—</span><span>—</span><span>—</span></div>
             </div>
           </div>
           <div class="rate-metrics">
-            <div><span>Haftalik minimum</span><strong>1,062 UZS</strong></div>
-            <div><span>Haftalik maksimum</span><strong>1,084 UZS</strong></div>
-            <div><span>O‘rtacha kurs</span><strong>1,073 UZS</strong></div>
-            <div><span>O‘zgarish</span><strong class="positive">+1.69%</strong></div>
+            <div><span id="rateMetricMinLabel">Minimum</span><strong id="rateMetricMin">1,840 UZS</strong></div>
+            <div><span id="rateMetricMaxLabel">Maksimum</span><strong id="rateMetricMax">1,840 UZS</strong></div>
+            <div><span>O‘rtacha kurs</span><strong id="rateMetricAvg">1,840 UZS</strong></div>
+            <div><span>O‘zgarish</span><strong id="rateMetricChange" class="positive">0%</strong></div>
           </div>
-          <p class="rate-chart-note">Kurs ma’lumotlari muntazam yangilanadi. Xarid vaqtida bosh sahifadagi joriy kurs qo‘llanadi.</p>
+          <p class="rate-chart-note">Kurs Super Admin sozlamalaridan yangilanadi. Xarid vaqtida bosh sahifadagi joriy kurs qo‘llanadi.</p>
         </div>
       </section>
 
@@ -231,7 +231,7 @@
           </label>
 
           <div class="soft-card calc">
-            <div class="row"><span>Kurs</span><strong id="buyRate">1,080 UZS</strong></div>
+            <div class="row"><span>Kurs</span><strong id="buyRate">1,840 UZS</strong></div>
             <div class="row"><span>Komissiya</span><strong class="ok">0%</strong></div>
             <div class="row total"><span>To‘lov</span><strong id="uzsTotal">540,000 UZS</strong></div>
           </div>

@@ -1,5 +1,6 @@
 const tg = window.Telegram?.WebApp;
-let RATE = 1080;
+let RATE = 1840;
+let rateStatsDays = 7;
 let MIN_CNY = 30;
 let MAX_CNY = 500;
 let WORK_HOURS = "07:00–23:00";
@@ -570,6 +571,7 @@ function go(screen) {
     : "none";
 
   if (screen === "home") renderHome();
+  if (screen === "rate-stats") loadRateStats(rateStatsDays);
   if (screen === "transactions") renderTransactions();
   if (screen === "purchases") renderAllPurchases();
   if (screen === "qrs") renderQrs();
@@ -1450,8 +1452,156 @@ async function syncConfig() {
     updateBuyCalc();
     const amountInput = document.getElementById("cnyAmount");
     if (amountInput?.value) validateAmount(true);
+    if (document.querySelector('.screen.active[data-screen="rate-stats"]')) {
+      loadRateStats(rateStatsDays);
+    }
   } catch (err) {
     console.warn("[YuanGo] Config yuklanmadi:", err);
+  }
+}
+
+function formatRatePct(pct) {
+  const n = Number(pct) || 0;
+  const sign = n > 0 ? "+" : "";
+  return `${sign}${n.toFixed(2)}%`;
+}
+
+function buildRateChartPaths(points) {
+  const w = 360;
+  const h = 180;
+  const padY = 18;
+  const rates = points.map((p) => Number(p.rate) || 0);
+  if (!rates.length) {
+    return { fill: `M0 ${h / 2} H${w} V${h} H0Z`, line: `M0 ${h / 2} H${w}`, cx: w, cy: h / 2 };
+  }
+  const minR = Math.min(...rates);
+  const maxR = Math.max(...rates);
+  const span = Math.max(maxR - minR, 1);
+  const ys = rates.map((r) => {
+    const t = (r - minR) / span;
+    return h - padY - t * (h - padY * 2);
+  });
+  const xs = rates.map((_, i) =>
+    rates.length === 1 ? w : (i / (rates.length - 1)) * w
+  );
+  let line = `M${xs[0]} ${ys[0]}`;
+  for (let i = 1; i < xs.length; i++) {
+    const cx = (xs[i - 1] + xs[i]) / 2;
+    line += ` C${cx} ${ys[i - 1]} ${cx} ${ys[i]} ${xs[i]} ${ys[i]}`;
+  }
+  const fill = `${line} V${h} H0 Z`;
+  return {
+    fill,
+    line,
+    cx: xs[xs.length - 1],
+    cy: ys[ys.length - 1],
+  };
+}
+
+function rateLabelDate(iso) {
+  if (!iso) return "—";
+  const d = new Date(String(iso).replace(" ", "T"));
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString(locale(), { day: "numeric", month: "short" });
+}
+
+function renderRateStats(data) {
+  if (!data) return;
+  const current = data.current ?? RATE;
+  const change = Number(data.change_pct) || 0;
+  const arrow = change > 0 ? "↗" : change < 0 ? "↘" : "→";
+  const changeClass = change > 0 ? "positive" : change < 0 ? "negative" : "";
+
+  const curEl = document.getElementById("rateStatsCurrent");
+  if (curEl) curEl.textContent = `1 CNY = ${formatNumber(current)} UZS`;
+  const chEl = document.getElementById("rateStatsChange");
+  if (chEl) {
+    chEl.innerHTML = `<b class="${changeClass}">${arrow} ${formatRatePct(change)}</b> davr ichida`;
+  }
+  const chartCur = document.getElementById("rateChartCurrent");
+  if (chartCur) chartCur.textContent = `${formatNumber(current)} UZS`;
+
+  const periodLabel = document.getElementById("rateChartPeriodLabel");
+  if (periodLabel) {
+    periodLabel.textContent =
+      data.days === 30 ? "So‘nggi 1 oy" : data.days === 90 ? "So‘nggi 3 oy" : "So‘nggi 7 kun";
+  }
+
+  document.querySelectorAll("#ratePeriods [data-rate-days]").forEach((btn) => {
+    btn.classList.toggle("active", Number(btn.dataset.rateDays) === Number(data.days));
+  });
+
+  const points = data.points?.length
+    ? data.points
+    : [{ rate: current, created_at: new Date().toISOString() }];
+  const paths = buildRateChartPaths(points);
+  const fill = document.getElementById("rateChartFill");
+  const line = document.getElementById("rateChartLine");
+  const dot = document.getElementById("rateChartDot");
+  if (fill) fill.setAttribute("d", paths.fill);
+  if (line) line.setAttribute("d", paths.line);
+  if (dot) {
+    dot.setAttribute("cx", String(paths.cx));
+    dot.setAttribute("cy", String(paths.cy));
+  }
+
+  const labels = document.getElementById("rateChartLabels");
+  if (labels) {
+    const idxs =
+      points.length <= 1
+        ? [0]
+        : [0, Math.floor((points.length - 1) / 3), Math.floor(((points.length - 1) * 2) / 3), points.length - 1];
+    const unique = [...new Set(idxs)];
+    labels.innerHTML = unique
+      .map((i) => `<span>${rateLabelDate(points[i]?.created_at)}</span>`)
+      .join("");
+  }
+
+  const setMetric = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = `${formatNumber(value)} UZS`;
+  };
+  setMetric("rateMetricMin", data.min ?? current);
+  setMetric("rateMetricMax", data.max ?? current);
+  setMetric("rateMetricAvg", data.avg ?? current);
+  const mChange = document.getElementById("rateMetricChange");
+  if (mChange) {
+    mChange.textContent = formatRatePct(change);
+    mChange.classList.toggle("positive", change > 0);
+    mChange.classList.toggle("negative", change < 0);
+  }
+
+  const minLabel = document.getElementById("rateMetricMinLabel");
+  const maxLabel = document.getElementById("rateMetricMaxLabel");
+  if (minLabel) {
+    minLabel.textContent =
+      data.days === 7 ? "Haftalik minimum" : data.days === 30 ? "Oylik minimum" : "Minimum";
+  }
+  if (maxLabel) {
+    maxLabel.textContent =
+      data.days === 7 ? "Haftalik maksimum" : data.days === 30 ? "Oylik maksimum" : "Maksimum";
+  }
+}
+
+async function loadRateStats(days = rateStatsDays) {
+  rateStatsDays = days;
+  try {
+    const res = await fetch(`/api/rate-history?days=${days}`, { headers: API_HEADERS });
+    const data = await res.json();
+    if (!data.ok) return;
+    if (data.current) RATE = Number(data.current) || RATE;
+    renderRateStats(data);
+  } catch (err) {
+    console.warn("[YuanGo] Kurs statistikasi yuklanmadi:", err);
+    renderRateStats({
+      days,
+      current: RATE,
+      min: RATE,
+      max: RATE,
+      avg: RATE,
+      change_pct: 0,
+      points: [{ rate: RATE, created_at: new Date().toISOString() }],
+    });
   }
 }
 
@@ -1697,6 +1847,12 @@ async function readImageCompressed(file, maxSize = 960, quality = 0.6) {
 function bindUi() {
   document.querySelectorAll("[data-go]").forEach((el) => {
     el.addEventListener("click", () => go(el.dataset.go));
+  });
+
+  document.getElementById("ratePeriods")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-rate-days]");
+    if (!btn) return;
+    loadRateStats(Number(btn.dataset.rateDays) || 7);
   });
 
   document.querySelectorAll(".tab-item").forEach((btn) => {

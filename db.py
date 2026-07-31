@@ -94,7 +94,7 @@ _conn.commit()
 
 # Default sozlamalar
 _defaults = {
-    "rate_uzs": "1080",
+    "rate_uzs": "1840",
     "min_cny": "30",
     "max_cny": "500",
     "work_hours": "07:00–23:00",
@@ -104,6 +104,25 @@ for _k, _v in _defaults.items():
     _conn.execute(
         "INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (_k, _v)
     )
+# Eski default (1080) → yangi boshlang‘ich kurs (1840)
+_row = _conn.execute(
+    "SELECT value FROM settings WHERE key = 'rate_uzs'"
+).fetchone()
+if _row and str(_row["value"]).strip() in ("1080", "1080.0"):
+    _conn.execute(
+        "UPDATE settings SET value = ? WHERE key = 'rate_uzs'", ("1840",)
+    )
+_conn.commit()
+
+_conn.execute(
+    """
+    CREATE TABLE IF NOT EXISTS rate_history (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        rate       REAL    NOT NULL,
+        created_at TEXT    NOT NULL
+    )
+    """
+)
 _conn.commit()
 
 _conn.execute(
@@ -209,6 +228,20 @@ def list_admins() -> list[dict]:
         " ORDER BY updated_at DESC"
     ).fetchall()
     return [dict(r) for r in rows]
+
+
+def list_admin_chat_ids(owner_id: int | None = None) -> list[int]:
+    """Barcha admin / super admin telegram ID lari."""
+    ids: set[int] = set()
+    if owner_id:
+        ids.add(int(owner_id))
+    rows = _conn.execute(
+        "SELECT telegram_id FROM users"
+        " WHERE is_admin = 1 OR COALESCE(is_super_admin, 0) = 1"
+    ).fetchall()
+    for row in rows:
+        ids.add(int(row["telegram_id"]))
+    return sorted(ids)
 
 
 def grant_ordinary_admin(telegram_id: int, first_name: str, last_name: str) -> dict:
@@ -474,6 +507,56 @@ def set_settings(values: dict) -> dict:
             )
         _conn.commit()
     return get_settings()
+
+
+# ---------------------------------------------------------------- Rate history
+
+def ensure_rate_history_seeded() -> None:
+    """Agar tarix bo'sh bo'lsa — joriy kursdan boshlang'ich nuqta yozadi."""
+    with _lock:
+        count = _conn.execute("SELECT COUNT(*) AS c FROM rate_history").fetchone()["c"]
+        if count:
+            return
+        try:
+            rate = float(get_settings().get("rate_uzs") or 1840)
+        except (TypeError, ValueError):
+            rate = 1840.0
+        _conn.execute(
+            "INSERT INTO rate_history (rate, created_at) VALUES (?, ?)",
+            (rate, _now()),
+        )
+        _conn.commit()
+
+
+def add_rate_history(rate: float, created_at: str | None = None) -> None:
+    with _lock:
+        _conn.execute(
+            "INSERT INTO rate_history (rate, created_at) VALUES (?, ?)",
+            (float(rate), created_at or _now()),
+        )
+        _conn.commit()
+
+
+def rate_history(days: int = 7) -> list[dict]:
+    """So'nggi N kunlik kurs tarixi (vaqt bo'yicha o'sish tartibida)."""
+    ensure_rate_history_seeded()
+    days = max(1, min(int(days or 7), 365))
+    since = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
+    rows = _conn.execute(
+        "SELECT rate, created_at FROM rate_history"
+        " WHERE created_at >= ?"
+        " ORDER BY created_at ASC, id ASC",
+        (since,),
+    ).fetchall()
+    points = [dict(r) for r in rows]
+    if points:
+        return points
+    # Period ichida nuqta yo'q — eng so'nggi kursni qaytar
+    last = _conn.execute(
+        "SELECT rate, created_at FROM rate_history"
+        " ORDER BY created_at DESC, id DESC LIMIT 1"
+    ).fetchone()
+    return [dict(last)] if last else []
 
 
 # ---------------------------------------------------------------- Reviews
