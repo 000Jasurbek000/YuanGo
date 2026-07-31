@@ -1,12 +1,22 @@
+"""Yuan Go — LOCAL test (Windows / kompyuter).
+
+Serverga / GitHub ga yuklash uchun: main.py
+"""
+
 import json
 import os
 import re
 import secrets
+import sys
 import threading
-import fcntl
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
+
+try:
+    import fcntl
+except ImportError:  # Windows
+    fcntl = None
 
 import telebot
 from dotenv import load_dotenv
@@ -2037,10 +2047,20 @@ def start_bot_once() -> None:
             print(f"Webhook o'rnatishda xato: {exc}")
         return
 
-    lock_path = "/tmp/yuango_bot.lock"
-    lock_file = open(lock_path, "w")
+    lock_path = BASE_DIR / "yuango_bot.lock"
+    lock_file = open(lock_path, "a+")
     try:
-        fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        if fcntl is not None:
+            fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        elif sys.platform == "win32":
+            import msvcrt
+
+            lock_file.seek(0)
+            if lock_file.read(1) == "":
+                lock_file.write("0")
+                lock_file.flush()
+            lock_file.seek(0)
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
     except OSError:
         print("Bot allaqachon boshqa workerda ishlayapti, bu yerda ishga tushirilmaydi.")
         return

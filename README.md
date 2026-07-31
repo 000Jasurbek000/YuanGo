@@ -23,6 +23,10 @@ copy .env.example .env
 `.env` ni to‘ldiring (`BOT_TOKEN`, `WEBAPP_URL`, `OWNER_TELEGRAM_ID`).
 
 ```bash
+# Lokal test (Windows / kompyuter)
+python mainserver.py
+
+# Production server (GitHub / hosting) — main.py
 python main.py
 ```
 
@@ -54,7 +58,8 @@ Telegram WebApp uchun HTTPS shart. Lokal uchun:
 ## Loyiha tuzilishi
 
 ```
-main.py          # Bot + Flask API
+main.py          # PRODUCTION: server / GitHub deploy (Passenger, /tmp lock)
+mainserver.py    # LOCAL: Windows/kompyuter test (ngrok, local lock)
 db.py            # SQLite
 public/          # Mini App + admin UI
 uploads/         # Yuklangan cheklar (gitignore)

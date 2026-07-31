@@ -128,6 +128,85 @@ const I18N = {
     "proof.alipay": "Alipay QR",
     "proof.yuan": "Yuan o‘tkazma cheki",
     "amount.invalid": "Bunday miqdor mumkin emas. Eng kam 30 CNY, eng ko‘p 500 CNY.",
+    "buy.title": "Yuan sotib olish",
+    "buy.amount": "Miqdor (CNY)",
+    "buy.rate": "Kurs",
+    "buy.fee": "Komissiya",
+    "buy.pay": "To‘lov",
+    "buy.pickCard": "Kartani tanlang",
+    "buy.transfer": "O‘tkazish",
+    "receipt.title": "Chek yuborish",
+    "receipt.hint": "O‘tkazma chekining skrinshotini yuklang.",
+    "receipt.pick": "Chek rasmini tanlang",
+    "receipt.change": "Rasmni o‘zgartirish",
+    "receipt.note": "Izoh (ixtiyoriy)",
+    "receipt.notePh": "Qo‘shimcha ma’lumot...",
+    "receipt.next": "Keyingi",
+    "qrSelect.title": "Alipay QR",
+    "qrSelect.next": "Keyingi",
+    "confirm.title": "Yakuniy tasdiq",
+    "confirm.txId": "Tranzaksiya ID",
+    "confirm.date": "Sana",
+    "confirm.amount": "Miqdor",
+    "confirm.pay": "To‘lov",
+    "confirm.card": "Karta",
+    "confirm.hint": "Ma’lumotlar tasdiqlangach, yuan Alipay QR ga yuboriladi.",
+    "confirm.submit": "Tasdiqlash",
+    "progress.title": "Jarayonda",
+    "progress.heading": "Tranzaksiya jarayonda",
+    "progress.step1": "Pul tekshirilmoqda",
+    "progress.step2": "Chek tekshirildi",
+    "progress.step3": "Tasdiqlanishi kutilmoqda",
+    "progress.step4": "Yuan yuborilmoqda",
+    "progress.step5": "Yakunlandi",
+    "progress.details": "Tafsilotni ko‘rish",
+    "rateStats.title": "Kurs statistikasi",
+    "rateStats.current": "Joriy kurs",
+    "rateStats.dynamics": "Kurs dinamikasi",
+    "rateStats.period7": "So‘nggi 7 kun",
+    "rateStats.period30": "So‘nggi 1 oy",
+    "rateStats.period90": "So‘nggi 3 oy",
+    "rateStats.btn7": "7 kun",
+    "rateStats.btn30": "1 oy",
+    "rateStats.btn90": "3 oy",
+    "rateStats.min": "Minimum",
+    "rateStats.max": "Maksimum",
+    "rateStats.minWeek": "Haftalik minimum",
+    "rateStats.maxWeek": "Haftalik maksimum",
+    "rateStats.minMonth": "Oylik minimum",
+    "rateStats.maxMonth": "Oylik maksimum",
+    "rateStats.avg": "O‘rtacha kurs",
+    "rateStats.change": "O‘zgarish",
+    "rateStats.changeInPeriod": "davr ichida",
+    "rateStats.note": "Kurs Super Admin sozlamalaridan yangilanadi. Xarid vaqtida bosh sahifadagi joriy kurs qo‘llanadi.",
+    "rateStats.openHint": "Statistika ›",
+    "stats.weekTitle": "Oxirgi 7 kun",
+    "stats.weekHint": "Kunlik muvaffaqiyatli xaridlar",
+    "help.faqTitle": "Ko‘p so‘raladigan savollar",
+    "help.faqHint": "Kerakli savolni bosib javobni ko‘ring.",
+    "help.q1": "Yuan qanday sotib olinadi?",
+    "help.a1": "Miqdorni kiriting, kartaga to‘lov qiling, chek rasmini yuklang va yuan qabul qiladigan Alipay QR kodingizni tanlang.",
+    "help.q2": "Tranzaksiya qancha vaqtda tasdiqlanadi?",
+    "help.a2": "Odatda 5–30 daqiqa ichida. So‘rovlar 07:00–23:00 ish vaqti davomida ko‘rib chiqiladi.",
+    "help.q3": "Qancha yuan sotib olish mumkin?",
+    "help.a3": "Bir tranzaksiyada eng kam 30 CNY, eng ko‘p 500 CNY sotib olish mumkin. Komissiya 0%.",
+    "help.q4": "Nima uchun Alipay QR kerak?",
+    "help.a4": "Sotib olingan yuan aynan siz tanlagan Alipay QR hisobiga yuboriladi. QR tasviri aniq va to‘liq bo‘lishi kerak.",
+    "help.q5": "Tranzaksiya nega bekor qilinishi mumkin?",
+    "help.a5": "To‘lov tasdiqlanmasa, chek noto‘g‘ri bo‘lsa yoki QR o‘qilmasa tranzaksiya bekor qilinishi mumkin. Sababi tranzaksiya tafsilotida ko‘rsatiladi.",
+    "help.q6": "Ma’lumotlarim xavfsizmi?",
+    "help.a6": "Shaxsiy ma’lumotlar va to‘lov tasvirlari faqat xizmatni bajarish uchun ishlatiladi va himoyalangan tarzda saqlanadi.",
+    "help.operator": "Operator bilan bog‘lanish",
+    "support.title": "Operator",
+    "support.hello": "Assalomu alaykum! Qanday yordam berolaman?",
+    "support.placeholder": "Xabar yozing...",
+    "ref.title": "Takliflar",
+    "ref.link": "Sizning havolangiz",
+    "ref.copy": "Nusxa",
+    "ref.count": "Takliflar",
+    "ref.bonus": "Bonus",
+    "qr.namePh": "Masalan: Asosiy Alipay",
+    "qrs.title": "QR kodlarim",
     "notifications.title": "Bildirishnomalar",
     "notifications.approved": "Tranzaksiya tasdiqlandi",
     "notifications.approvedText": "Yuan muvaffaqiyatli yuborildi",
@@ -252,6 +331,85 @@ const I18N = {
     "proof.alipay": "Alipay QR",
     "proof.yuan": "Чек перевода юаней",
     "amount.invalid": "Такая сумма недоступна. Минимум 30 CNY, максимум 500 CNY.",
+    "buy.title": "Купить юань",
+    "buy.amount": "Сумма (CNY)",
+    "buy.rate": "Курс",
+    "buy.fee": "Комиссия",
+    "buy.pay": "К оплате",
+    "buy.pickCard": "Выберите карту",
+    "buy.transfer": "Перевести",
+    "receipt.title": "Отправить чек",
+    "receipt.hint": "Загрузите скриншот чека перевода.",
+    "receipt.pick": "Выберите фото чека",
+    "receipt.change": "Изменить фото",
+    "receipt.note": "Комментарий (необязательно)",
+    "receipt.notePh": "Дополнительная информация...",
+    "receipt.next": "Далее",
+    "qrSelect.title": "Alipay QR",
+    "qrSelect.next": "Далее",
+    "confirm.title": "Подтверждение",
+    "confirm.txId": "ID операции",
+    "confirm.date": "Дата",
+    "confirm.amount": "Сумма",
+    "confirm.pay": "К оплате",
+    "confirm.card": "Карта",
+    "confirm.hint": "После подтверждения юани будут отправлены на выбранный Alipay QR.",
+    "confirm.submit": "Подтвердить",
+    "progress.title": "В процессе",
+    "progress.heading": "Операция в процессе",
+    "progress.step1": "Проверяем оплату",
+    "progress.step2": "Чек проверен",
+    "progress.step3": "Ожидаем подтверждения",
+    "progress.step4": "Отправляем юани",
+    "progress.step5": "Завершено",
+    "progress.details": "Смотреть детали",
+    "rateStats.title": "Статистика курса",
+    "rateStats.current": "Текущий курс",
+    "rateStats.dynamics": "Динамика курса",
+    "rateStats.period7": "Последние 7 дней",
+    "rateStats.period30": "Последний 1 месяц",
+    "rateStats.period90": "Последние 3 месяца",
+    "rateStats.btn7": "7 дней",
+    "rateStats.btn30": "1 месяц",
+    "rateStats.btn90": "3 месяца",
+    "rateStats.min": "Минимум",
+    "rateStats.max": "Максимум",
+    "rateStats.minWeek": "Недельный минимум",
+    "rateStats.maxWeek": "Недельный максимум",
+    "rateStats.minMonth": "Месячный минимум",
+    "rateStats.maxMonth": "Месячный максимум",
+    "rateStats.avg": "Средний курс",
+    "rateStats.change": "Изменение",
+    "rateStats.changeInPeriod": "за период",
+    "rateStats.note": "Курс обновляется в настройках Super Admin. При покупке действует текущий курс на главной.",
+    "rateStats.openHint": "Статистика ›",
+    "stats.weekTitle": "Последние 7 дней",
+    "stats.weekHint": "Успешные покупки по дням",
+    "help.faqTitle": "Частые вопросы",
+    "help.faqHint": "Нажмите на вопрос, чтобы увидеть ответ.",
+    "help.q1": "Как купить юань?",
+    "help.a1": "Введите сумму, оплатите на карту, загрузите чек и выберите Alipay QR для получения юаней.",
+    "help.q2": "Сколько ждать подтверждения?",
+    "help.a2": "Обычно 5–30 минут. Заявки обрабатываются с 07:00 до 23:00.",
+    "help.q3": "Сколько юаней можно купить?",
+    "help.a3": "За одну операцию от 30 до 500 CNY. Комиссия 0%.",
+    "help.q4": "Зачем нужен Alipay QR?",
+    "help.a4": "Юани отправляются именно на выбранный вами Alipay QR. Изображение должно быть чётким.",
+    "help.q5": "Почему операцию могут отменить?",
+    "help.a5": "Если оплата не подтверждена, чек неверный или QR не читается. Причина указана в деталях.",
+    "help.q6": "Безопасны ли мои данные?",
+    "help.a6": "Личные данные и фото чеков используются только для оказания услуги и хранятся защищённо.",
+    "help.operator": "Связаться с оператором",
+    "support.title": "Оператор",
+    "support.hello": "Здравствуйте! Чем могу помочь?",
+    "support.placeholder": "Напишите сообщение...",
+    "ref.title": "Рефералы",
+    "ref.link": "Ваша ссылка",
+    "ref.copy": "Копировать",
+    "ref.count": "Рефералы",
+    "ref.bonus": "Бонус",
+    "qr.namePh": "Например: Основной Alipay",
+    "qrs.title": "Мои QR",
     "notifications.title": "Уведомления",
     "notifications.approved": "Операция подтверждена",
     "notifications.approvedText": "Юани успешно отправлены",
@@ -376,6 +534,85 @@ const I18N = {
     "proof.alipay": "Alipay QR",
     "proof.yuan": "Yuan transfer receipt",
     "amount.invalid": "This amount is not allowed. Minimum 30 CNY, maximum 500 CNY.",
+    "buy.title": "Buy Yuan",
+    "buy.amount": "Amount (CNY)",
+    "buy.rate": "Rate",
+    "buy.fee": "Fee",
+    "buy.pay": "Total",
+    "buy.pickCard": "Choose a card",
+    "buy.transfer": "Transfer",
+    "receipt.title": "Send receipt",
+    "receipt.hint": "Upload a screenshot of the transfer receipt.",
+    "receipt.pick": "Select receipt image",
+    "receipt.change": "Change image",
+    "receipt.note": "Note (optional)",
+    "receipt.notePh": "Additional details...",
+    "receipt.next": "Next",
+    "qrSelect.title": "Alipay QR",
+    "qrSelect.next": "Next",
+    "confirm.title": "Final confirmation",
+    "confirm.txId": "Transaction ID",
+    "confirm.date": "Date",
+    "confirm.amount": "Amount",
+    "confirm.pay": "Total",
+    "confirm.card": "Card",
+    "confirm.hint": "Once confirmed, yuan will be sent to your Alipay QR.",
+    "confirm.submit": "Confirm",
+    "progress.title": "In progress",
+    "progress.heading": "Transaction in progress",
+    "progress.step1": "Checking payment",
+    "progress.step2": "Receipt checked",
+    "progress.step3": "Waiting for approval",
+    "progress.step4": "Sending yuan",
+    "progress.step5": "Completed",
+    "progress.details": "View details",
+    "rateStats.title": "Rate statistics",
+    "rateStats.current": "Current rate",
+    "rateStats.dynamics": "Rate dynamics",
+    "rateStats.period7": "Last 7 days",
+    "rateStats.period30": "Last 1 month",
+    "rateStats.period90": "Last 3 months",
+    "rateStats.btn7": "7 days",
+    "rateStats.btn30": "1 month",
+    "rateStats.btn90": "3 months",
+    "rateStats.min": "Minimum",
+    "rateStats.max": "Maximum",
+    "rateStats.minWeek": "Weekly minimum",
+    "rateStats.maxWeek": "Weekly maximum",
+    "rateStats.minMonth": "Monthly minimum",
+    "rateStats.maxMonth": "Monthly maximum",
+    "rateStats.avg": "Average rate",
+    "rateStats.change": "Change",
+    "rateStats.changeInPeriod": "in period",
+    "rateStats.note": "The rate is updated in Super Admin settings. Purchases use the current rate on the home screen.",
+    "rateStats.openHint": "Statistics ›",
+    "stats.weekTitle": "Last 7 days",
+    "stats.weekHint": "Successful daily purchases",
+    "help.faqTitle": "Frequently asked questions",
+    "help.faqHint": "Tap a question to see the answer.",
+    "help.q1": "How do I buy yuan?",
+    "help.a1": "Enter the amount, pay to the card, upload the receipt, and select your Alipay QR to receive yuan.",
+    "help.q2": "How long does approval take?",
+    "help.a2": "Usually 5–30 minutes. Requests are reviewed between 07:00 and 23:00.",
+    "help.q3": "How much yuan can I buy?",
+    "help.a3": "From 30 to 500 CNY per transaction. Fee is 0%.",
+    "help.q4": "Why do I need an Alipay QR?",
+    "help.a4": "Purchased yuan is sent to the Alipay QR you select. The image must be clear and complete.",
+    "help.q5": "Why might a transaction be cancelled?",
+    "help.a5": "If payment is not confirmed, the receipt is wrong, or the QR is unreadable. The reason is shown in details.",
+    "help.q6": "Is my data safe?",
+    "help.a6": "Personal data and receipt images are used only to provide the service and are stored securely.",
+    "help.operator": "Contact the operator",
+    "support.title": "Operator",
+    "support.hello": "Hello! How can I help you?",
+    "support.placeholder": "Type a message...",
+    "ref.title": "Referrals",
+    "ref.link": "Your link",
+    "ref.copy": "Copy",
+    "ref.count": "Referrals",
+    "ref.bonus": "Bonus",
+    "qr.namePh": "e.g. Main Alipay",
+    "qrs.title": "My QR codes",
     "notifications.title": "Notifications",
     "notifications.approved": "Transaction approved",
     "notifications.approvedText": "Yuan was sent successfully",
@@ -549,6 +786,14 @@ function applyI18n() {
     const key = el.getAttribute("data-i18n");
     if (key) el.textContent = t(key);
   });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-placeholder");
+    if (key) el.setAttribute("placeholder", t(key));
+  });
+  document.querySelectorAll("[data-i18n-aria]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-aria");
+    if (key) el.setAttribute("aria-label", t(key));
+  });
   const langValue = document.getElementById("langValue");
   if (langValue) langValue.textContent = t(`lang.${state.lang}`);
   document.querySelectorAll("[data-lang]").forEach((btn) => {
@@ -654,6 +899,8 @@ function updateBuyCalc() {
   state.amount = amount;
   document.getElementById("uzsTotal").textContent = `${formatNumber(amount * RATE)} UZS`;
   document.getElementById("buyRate").textContent = `${formatNumber(RATE)} UZS`;
+  const feeEl = document.getElementById("buyCommission");
+  if (feeEl) feeEl.textContent = COMMISSION;
 }
 
 function amountInvalidText() {
@@ -1516,7 +1763,7 @@ function renderRateStats(data) {
   if (curEl) curEl.textContent = `1 CNY = ${formatNumber(current)} UZS`;
   const chEl = document.getElementById("rateStatsChange");
   if (chEl) {
-    chEl.innerHTML = `<b class="${changeClass}">${arrow} ${formatRatePct(change)}</b> davr ichida`;
+    chEl.innerHTML = `<b class="${changeClass}">${arrow} ${formatRatePct(change)}</b> ${t("rateStats.changeInPeriod")}`;
   }
   const chartCur = document.getElementById("rateChartCurrent");
   if (chartCur) chartCur.textContent = `${formatNumber(current)} UZS`;
@@ -1524,11 +1771,22 @@ function renderRateStats(data) {
   const periodLabel = document.getElementById("rateChartPeriodLabel");
   if (periodLabel) {
     periodLabel.textContent =
-      data.days === 30 ? "So‘nggi 1 oy" : data.days === 90 ? "So‘nggi 3 oy" : "So‘nggi 7 kun";
+      data.days === 30
+        ? t("rateStats.period30")
+        : data.days === 90
+          ? t("rateStats.period90")
+          : t("rateStats.period7");
   }
 
   document.querySelectorAll("#ratePeriods [data-rate-days]").forEach((btn) => {
     btn.classList.toggle("active", Number(btn.dataset.rateDays) === Number(data.days));
+    const key =
+      Number(btn.dataset.rateDays) === 30
+        ? "rateStats.btn30"
+        : Number(btn.dataset.rateDays) === 90
+          ? "rateStats.btn90"
+          : "rateStats.btn7";
+    btn.textContent = t(key);
   });
 
   const points = data.points?.length
@@ -1575,11 +1833,19 @@ function renderRateStats(data) {
   const maxLabel = document.getElementById("rateMetricMaxLabel");
   if (minLabel) {
     minLabel.textContent =
-      data.days === 7 ? "Haftalik minimum" : data.days === 30 ? "Oylik minimum" : "Minimum";
+      data.days === 7
+        ? t("rateStats.minWeek")
+        : data.days === 30
+          ? t("rateStats.minMonth")
+          : t("rateStats.min");
   }
   if (maxLabel) {
     maxLabel.textContent =
-      data.days === 7 ? "Haftalik maksimum" : data.days === 30 ? "Oylik maksimum" : "Maksimum";
+      data.days === 7
+        ? t("rateStats.maxWeek")
+        : data.days === 30
+          ? t("rateStats.maxMonth")
+          : t("rateStats.max");
   }
 }
 
@@ -1756,7 +2022,12 @@ function setLanguage(lang) {
   renderTransactions();
   renderQrs();
   renderQrSelection();
-  validateAmount(!document.getElementById("amountError").hidden);
+  updateBuyCalc();
+  loadRateStats(rateStatsDays);
+  if (document.querySelector('.screen.active[data-screen="tx-detail"]')) renderTxDetail();
+  if (document.querySelector('.screen.active[data-screen="confirm"]')) renderConfirm();
+  if (document.querySelector('.screen.active[data-screen="stats"]')) renderStats();
+  validateAmount(!document.getElementById("amountError")?.hidden);
   toast(t("toast.lang"));
 }
 

@@ -74,7 +74,7 @@
               <span class="update-icon">◷</span>
               <span data-i18n="home.updated">Oxirgi yangilanish:</span>
               <time id="rateUpdatedAt">30.07.2026, 01:30</time>
-              <span class="rate-open-hint">Statistika ›</span>
+              <span class="rate-open-hint" data-i18n="rateStats.openHint">Statistika ›</span>
             </div>
           </button>
 
@@ -166,27 +166,27 @@
       <section class="screen" data-screen="rate-stats">
         <header class="topbar">
           <button class="icon-btn back" data-go="home" type="button">‹</button>
-          <h1>Kurs statistikasi</h1>
+          <h1 data-i18n="rateStats.title">Kurs statistikasi</h1>
           <span class="topbar-spacer"></span>
         </header>
         <div class="content rate-stats-content">
           <div class="rate-stats-summary">
-            <span>Joriy kurs</span>
+            <span data-i18n="rateStats.current">Joriy kurs</span>
             <strong id="rateStatsCurrent">1 CNY = 1,840 UZS</strong>
             <small id="rateStatsChange"><b>→ 0%</b> davr ichida</small>
           </div>
           <div class="rate-chart-card">
             <div class="rate-chart-head">
               <div>
-                <h2>Kurs dinamikasi</h2>
+                <h2 data-i18n="rateStats.dynamics">Kurs dinamikasi</h2>
                 <p id="rateChartPeriodLabel">So‘nggi 7 kun</p>
               </div>
               <span id="rateChartCurrent">1,840 UZS</span>
             </div>
             <div class="rate-periods" id="ratePeriods">
-              <button class="active" type="button" data-rate-days="7">7 kun</button>
-              <button type="button" data-rate-days="30">1 oy</button>
-              <button type="button" data-rate-days="90">3 oy</button>
+              <button class="active" type="button" data-rate-days="7" data-i18n="rateStats.btn7">7 kun</button>
+              <button type="button" data-rate-days="30" data-i18n="rateStats.btn30">1 oy</button>
+              <button type="button" data-rate-days="90" data-i18n="rateStats.btn90">3 oy</button>
             </div>
             <div class="rate-chart-area">
               <div class="chart-grid-lines"><i></i><i></i><i></i><i></i></div>
@@ -207,10 +207,10 @@
           <div class="rate-metrics">
             <div><span id="rateMetricMinLabel">Minimum</span><strong id="rateMetricMin">1,840 UZS</strong></div>
             <div><span id="rateMetricMaxLabel">Maksimum</span><strong id="rateMetricMax">1,840 UZS</strong></div>
-            <div><span>O‘rtacha kurs</span><strong id="rateMetricAvg">1,840 UZS</strong></div>
-            <div><span>O‘zgarish</span><strong id="rateMetricChange" class="positive">0%</strong></div>
+            <div><span data-i18n="rateStats.avg">O‘rtacha kurs</span><strong id="rateMetricAvg">1,840 UZS</strong></div>
+            <div><span data-i18n="rateStats.change">O‘zgarish</span><strong id="rateMetricChange" class="positive">0%</strong></div>
           </div>
-          <p class="rate-chart-note">Kurs Super Admin sozlamalaridan yangilanadi. Xarid vaqtida bosh sahifadagi joriy kurs qo‘llanadi.</p>
+          <p class="rate-chart-note" data-i18n="rateStats.note">Kurs Super Admin sozlamalaridan yangilanadi. Xarid vaqtida bosh sahifadagi joriy kurs qo‘llanadi.</p>
         </div>
       </section>
 
@@ -218,12 +218,12 @@
       <section class="screen" data-screen="buy">
         <header class="topbar">
           <button class="icon-btn back" data-go="home" type="button">‹</button>
-          <h1>Yuan sotib olish</h1>
+          <h1 data-i18n="buy.title">Yuan sotib olish</h1>
           <span class="topbar-spacer"></span>
         </header>
         <div class="content">
           <label class="field">
-            <span>Miqdor (CNY)</span>
+            <span data-i18n="buy.amount">Miqdor (CNY)</span>
             <input id="cnyAmount" type="number" inputmode="decimal" value="100" min="30" max="500" />
             <small class="field-error" id="amountError" hidden>
               Bunday miqdor mumkin emas. Eng kam 30 CNY, eng ko‘p 500 CNY.
@@ -231,15 +231,15 @@
           </label>
 
           <div class="soft-card calc">
-            <div class="row"><span>Kurs</span><strong id="buyRate">1,840 UZS</strong></div>
-            <div class="row"><span>Komissiya</span><strong class="ok">0%</strong></div>
-            <div class="row total"><span>To‘lov</span><strong id="uzsTotal">540,000 UZS</strong></div>
+            <div class="row"><span data-i18n="buy.rate">Kurs</span><strong id="buyRate">1,840 UZS</strong></div>
+            <div class="row"><span data-i18n="buy.fee">Komissiya</span><strong class="ok" id="buyCommission">0%</strong></div>
+            <div class="row total"><span data-i18n="buy.pay">To‘lov</span><strong id="uzsTotal">540,000 UZS</strong></div>
           </div>
 
-          <h2 class="section-title">Kartani tanlang</h2>
+          <h2 class="section-title" data-i18n="buy.pickCard">Kartani tanlang</h2>
           <div class="card-list" id="cardList"></div>
 
-          <button class="btn primary lg" id="paidBtn" type="button">O‘tkazish</button>
+          <button class="btn primary lg" id="paidBtn" type="button" data-i18n="buy.transfer">O‘tkazish</button>
         </div>
       </section>
 
@@ -247,25 +247,25 @@
       <section class="screen" data-screen="receipt">
         <header class="topbar">
           <button class="icon-btn back" data-go="buy" type="button">‹</button>
-          <h1>Chek yuborish</h1>
+          <h1 data-i18n="receipt.title">Chek yuborish</h1>
           <span class="topbar-spacer"></span>
         </header>
         <div class="content">
-          <p class="hint-text">O‘tkazma chekining skrinshotini yuklang.</p>
+          <p class="hint-text" data-i18n="receipt.hint">O‘tkazma chekining skrinshotini yuklang.</p>
           <div class="upload-box" id="receiptBox">
             <img id="receiptPreview" alt="" hidden />
             <div class="upload-placeholder" id="receiptPlaceholder">
               <span class="plus">＋</span>
-              <p>Chek rasmini tanlang</p>
+              <p data-i18n="receipt.pick">Chek rasmini tanlang</p>
             </div>
           </div>
           <input id="receiptInput" type="file" accept="image/*" hidden />
-          <button class="btn ghost" id="changeReceiptBtn" type="button">Rasmni o‘zgartirish</button>
+          <button class="btn ghost" id="changeReceiptBtn" type="button" data-i18n="receipt.change">Rasmni o‘zgartirish</button>
           <label class="field">
-            <span>Izoh (ixtiyoriy)</span>
-            <textarea id="receiptNote" rows="3" placeholder="Qo‘shimcha ma’lumot..."></textarea>
+            <span data-i18n="receipt.note">Izoh (ixtiyoriy)</span>
+            <textarea id="receiptNote" rows="3" data-i18n-placeholder="receipt.notePh" placeholder="Qo‘shimcha ma’lumot..."></textarea>
           </label>
-          <button class="btn primary lg" id="receiptNextBtn" type="button">Keyingi</button>
+          <button class="btn primary lg" id="receiptNextBtn" type="button" data-i18n="receipt.next">Keyingi</button>
         </div>
       </section>
 
@@ -273,14 +273,14 @@
       <section class="screen" data-screen="qr-select">
         <header class="topbar">
           <button class="icon-btn back" data-go="receipt" type="button">‹</button>
-          <h1>Alipay QR</h1>
+          <h1 data-i18n="qrSelect.title">Alipay QR</h1>
           <span class="topbar-spacer"></span>
         </header>
         <div class="content">
-          <p class="hint-text" id="qrSelectHint">Yuan qabul qilish uchun bitta QR kodni tanlang.</p>
+          <p class="hint-text" id="qrSelectHint" data-i18n="qr.selectOne">Yuan qabul qilish uchun bitta QR kodni tanlang.</p>
           <div class="qr-select-list" id="qrSelectList"></div>
-          <button class="upload-dashed" id="newQrPickBtn" type="button">＋ Yangi QR qo‘shish</button>
-          <button class="btn primary lg" id="qrNextBtn" type="button">Keyingi</button>
+          <button class="upload-dashed" id="newQrPickBtn" type="button" data-i18n="qr.add">＋ Yangi QR qo‘shish</button>
+          <button class="btn primary lg" id="qrNextBtn" type="button" data-i18n="qrSelect.next">Keyingi</button>
         </div>
       </section>
 
@@ -288,29 +288,29 @@
       <section class="screen" data-screen="confirm">
         <header class="topbar">
           <button class="icon-btn back" data-go="qr-select" type="button">‹</button>
-          <h1>Yakuniy tasdiq</h1>
+          <h1 data-i18n="confirm.title">Yakuniy tasdiq</h1>
           <span class="topbar-spacer"></span>
         </header>
         <div class="content">
           <div class="soft-card">
-            <div class="row"><span>Tranzaksiya ID</span><strong id="confirmTxId">TX000154</strong></div>
-            <div class="row"><span>Sana</span><strong id="confirmDate">30.07.2026, 02:40</strong></div>
-            <div class="row"><span>Miqdor</span><strong id="confirmCny">500 CNY</strong></div>
-            <div class="row"><span>To‘lov</span><strong id="confirmUzs">540,000 UZS</strong></div>
-            <div class="row"><span>Karta</span><strong id="confirmCard">Uzcard</strong></div>
+            <div class="row"><span data-i18n="confirm.txId">Tranzaksiya ID</span><strong id="confirmTxId">TX000154</strong></div>
+            <div class="row"><span data-i18n="confirm.date">Sana</span><strong id="confirmDate">30.07.2026, 02:40</strong></div>
+            <div class="row"><span data-i18n="confirm.amount">Miqdor</span><strong id="confirmCny">500 CNY</strong></div>
+            <div class="row"><span data-i18n="confirm.pay">To‘lov</span><strong id="confirmUzs">540,000 UZS</strong></div>
+            <div class="row"><span data-i18n="confirm.card">Karta</span><strong id="confirmCard">Uzcard</strong></div>
           </div>
           <div class="confirmation-proofs" id="confirmAttachments">
             <button class="confirmation-proof" type="button" data-confirm-image="receipt">
               <img id="confirmReceiptImage" alt="To‘lov cheki" />
-              <span>To‘lov cheki</span>
+              <span data-i18n="proof.payment">To‘lov cheki</span>
             </button>
             <button class="confirmation-proof" type="button" data-confirm-image="qr">
               <img id="confirmQrImage" alt="Alipay QR" />
-              <span>Alipay QR</span>
+              <span data-i18n="proof.alipay">Alipay QR</span>
             </button>
           </div>
-          <p class="hint-text">Ma’lumotlar tasdiqlangach, yuan Alipay QR ga yuboriladi.</p>
-          <button class="btn primary lg" id="confirmBtn" type="button">Tasdiqlash</button>
+          <p class="hint-text" data-i18n="confirm.hint">Ma’lumotlar tasdiqlangach, yuan Alipay QR ga yuboriladi.</p>
+          <button class="btn primary lg" id="confirmBtn" type="button" data-i18n="confirm.submit">Tasdiqlash</button>
         </div>
       </section>
 
@@ -318,20 +318,20 @@
       <section class="screen" data-screen="progress">
         <header class="topbar">
           <button class="icon-btn back" data-go="home" type="button">‹</button>
-          <h1>Jarayonda</h1>
+          <h1 data-i18n="progress.title">Jarayonda</h1>
           <span class="topbar-spacer"></span>
         </header>
         <div class="content center">
           <div class="status-icon wait">⏳</div>
-          <h2>Tranzaksiya jarayonda</h2>
+          <h2 data-i18n="progress.heading">Tranzaksiya jarayonda</h2>
           <ul class="steps" id="progressSteps">
-            <li class="done">Pul tekshirilmoqda</li>
-            <li class="done">Chek tekshirildi</li>
-            <li class="active">Tasdiqlanishi kutilmoqda</li>
-            <li>Yuan yuborilmoqda</li>
-            <li>Yakunlandi</li>
+            <li class="done" data-i18n="progress.step1">Pul tekshirilmoqda</li>
+            <li class="done" data-i18n="progress.step2">Chek tekshirildi</li>
+            <li class="active" data-i18n="progress.step3">Tasdiqlanishi kutilmoqda</li>
+            <li data-i18n="progress.step4">Yuan yuborilmoqda</li>
+            <li data-i18n="progress.step5">Yakunlandi</li>
           </ul>
-          <button class="btn ghost" data-go="tx-detail" type="button">Tafsilotni ko‘rish</button>
+          <button class="btn ghost" data-go="tx-detail" type="button" data-i18n="progress.details">Tafsilotni ko‘rish</button>
         </div>
       </section>
 
@@ -422,7 +422,7 @@
       <section class="screen" data-screen="qrs">
         <header class="topbar">
           <span class="topbar-spacer"></span>
-          <h1>QR kodlarim</h1>
+          <h1 data-i18n="qrs.title">QR kodlarim</h1>
           <span class="topbar-spacer"></span>
         </header>
         <div class="content">
@@ -602,8 +602,8 @@
           <div class="stats-chart-card">
             <div class="stats-section-head">
               <div>
-                <h2>Oxirgi 7 kun</h2>
-                <p>Kunlik muvaffaqiyatli xaridlar</p>
+                <h2 data-i18n="stats.weekTitle">Oxirgi 7 kun</h2>
+                <p data-i18n="stats.weekHint">Kunlik muvaffaqiyatli xaridlar</p>
               </div>
               <strong id="statWeekTotal">0 CNY</strong>
             </div>
@@ -668,7 +668,7 @@
           </button>
           <label class="field">
             <span data-i18n="qr.name">QR nomi</span>
-            <input id="qrNameInput" type="text" maxlength="30" placeholder="Masalan: Asosiy Alipay" />
+            <input id="qrNameInput" type="text" maxlength="30" data-i18n-placeholder="qr.namePh" placeholder="Masalan: Asosiy Alipay" />
           </label>
           <button class="btn primary lg" id="saveQrBtn" type="button" data-i18n="qr.save">Saqlash</button>
           <button class="btn ghost lg" id="cancelQrEditorBtn" type="button" data-i18n="common.close">Yopish</button>
@@ -679,24 +679,24 @@
       <section class="screen" data-screen="referrals">
         <header class="topbar">
           <button class="icon-btn back" data-go="home" type="button">‹</button>
-          <h1>Takliflar</h1>
+          <h1 data-i18n="ref.title">Takliflar</h1>
           <span class="topbar-spacer"></span>
         </header>
         <div class="content">
           <div class="soft-card">
-            <p class="muted">Sizning havolangiz</p>
+            <p class="muted" data-i18n="ref.link">Sizning havolangiz</p>
             <div class="copy-row">
               <code id="refLink">t.me/yuan_go_bot?start=ref</code>
-              <button class="btn small" id="copyRefBtn" type="button">Nusxa</button>
+              <button class="btn small" id="copyRefBtn" type="button" data-i18n="ref.copy">Nusxa</button>
             </div>
           </div>
           <div class="info-grid">
             <div class="info-box">
-              <span class="muted">Takliflar</span>
+              <span class="muted" data-i18n="ref.count">Takliflar</span>
               <strong id="refCount">24</strong>
             </div>
             <div class="info-box">
-              <span class="muted">Bonus</span>
+              <span class="muted" data-i18n="ref.bonus">Bonus</span>
               <strong id="refBonus">120,000 UZS</strong>
             </div>
           </div>
@@ -714,40 +714,40 @@
           <div class="help-intro">
             <span>?</span>
             <div>
-              <h2>Ko‘p so‘raladigan savollar</h2>
-              <p>Kerakli savolni bosib javobni ko‘ring.</p>
+              <h2 data-i18n="help.faqTitle">Ko‘p so‘raladigan savollar</h2>
+              <p data-i18n="help.faqHint">Kerakli savolni bosib javobni ko‘ring.</p>
             </div>
           </div>
           <div class="faq-list">
             <details>
-              <summary>Yuan qanday sotib olinadi?</summary>
-              <p>Miqdorni kiriting, kartaga to‘lov qiling, chek rasmini yuklang va yuan qabul qiladigan Alipay QR kodingizni tanlang.</p>
+              <summary data-i18n="help.q1">Yuan qanday sotib olinadi?</summary>
+              <p data-i18n="help.a1">Miqdorni kiriting, kartaga to‘lov qiling, chek rasmini yuklang va yuan qabul qiladigan Alipay QR kodingizni tanlang.</p>
             </details>
             <details>
-              <summary>Tranzaksiya qancha vaqtda tasdiqlanadi?</summary>
-              <p>Odatda 5–30 daqiqa ichida. So‘rovlar 07:00–23:00 ish vaqti davomida ko‘rib chiqiladi.</p>
+              <summary data-i18n="help.q2">Tranzaksiya qancha vaqtda tasdiqlanadi?</summary>
+              <p data-i18n="help.a2">Odatda 5–30 daqiqa ichida. So‘rovlar 07:00–23:00 ish vaqti davomida ko‘rib chiqiladi.</p>
             </details>
             <details>
-              <summary>Qancha yuan sotib olish mumkin?</summary>
-              <p>Bir tranzaksiyada eng kam 30 CNY, eng ko‘p 500 CNY sotib olish mumkin. Komissiya 0%.</p>
+              <summary data-i18n="help.q3">Qancha yuan sotib olish mumkin?</summary>
+              <p data-i18n="help.a3">Bir tranzaksiyada eng kam 30 CNY, eng ko‘p 500 CNY sotib olish mumkin. Komissiya 0%.</p>
             </details>
             <details>
-              <summary>Nima uchun Alipay QR kerak?</summary>
-              <p>Sotib olingan yuan aynan siz tanlagan Alipay QR hisobiga yuboriladi. QR tasviri aniq va to‘liq bo‘lishi kerak.</p>
+              <summary data-i18n="help.q4">Nima uchun Alipay QR kerak?</summary>
+              <p data-i18n="help.a4">Sotib olingan yuan aynan siz tanlagan Alipay QR hisobiga yuboriladi. QR tasviri aniq va to‘liq bo‘lishi kerak.</p>
             </details>
             <details>
-              <summary>Tranzaksiya nega bekor qilinishi mumkin?</summary>
-              <p>To‘lov tasdiqlanmasa, chek noto‘g‘ri bo‘lsa yoki QR o‘qilmasa tranzaksiya bekor qilinishi mumkin. Sababi tranzaksiya tafsilotida ko‘rsatiladi.</p>
+              <summary data-i18n="help.q5">Tranzaksiya nega bekor qilinishi mumkin?</summary>
+              <p data-i18n="help.a5">To‘lov tasdiqlanmasa, chek noto‘g‘ri bo‘lsa yoki QR o‘qilmasa tranzaksiya bekor qilinishi mumkin. Sababi tranzaksiya tafsilotida ko‘rsatiladi.</p>
             </details>
             <details>
-              <summary>Ma’lumotlarim xavfsizmi?</summary>
-              <p>Shaxsiy ma’lumotlar va to‘lov tasvirlari faqat xizmatni bajarish uchun ishlatiladi va himoyalangan tarzda saqlanadi.</p>
+              <summary data-i18n="help.q6">Ma’lumotlarim xavfsizmi?</summary>
+              <p data-i18n="help.a6">Shaxsiy ma’lumotlar va to‘lov tasvirlari faqat xizmatni bajarish uchun ishlatiladi va himoyalangan tarzda saqlanadi.</p>
             </details>
           </div>
           <a class="operator-card" href="https://t.me/jasurbek0521" target="_blank" rel="noopener">
             <span class="operator-icon">✈</span>
             <div>
-              <strong>Operator bilan bog‘lanish</strong>
+              <strong data-i18n="help.operator">Operator bilan bog‘lanish</strong>
               <p>@jasurbek0521</p>
             </div>
             <b>›</b>
@@ -760,15 +760,15 @@
       <section class="screen" data-screen="support">
         <header class="topbar">
           <button class="icon-btn back" data-go="help" type="button">‹</button>
-          <h1>Operator</h1>
+          <h1 data-i18n="support.title">Operator</h1>
           <span class="topbar-spacer"></span>
         </header>
         <div class="chat">
           <div class="chat-log" id="chatLog">
-            <div class="bubble in">Assalomu alaykum! Qanday yordam berolaman?</div>
+            <div class="bubble in" data-i18n="support.hello">Assalomu alaykum! Qanday yordam berolaman?</div>
           </div>
           <form class="chat-input" id="chatForm">
-            <input id="chatText" type="text" placeholder="Xabar yozing..." autocomplete="off" />
+            <input id="chatText" type="text" data-i18n-placeholder="support.placeholder" placeholder="Xabar yozing..." autocomplete="off" />
             <button class="btn small primary" type="submit">➤</button>
           </form>
         </div>
@@ -776,7 +776,7 @@
 
       <!-- BOTTOM NAV -->
       <nav class="tabbar" id="tabbar">
-        <button class="tab-item active" data-tab="home" type="button" aria-label="Bosh sahifa">
+        <button class="tab-item active" data-tab="home" type="button" data-i18n-aria="nav.home" aria-label="Bosh sahifa">
           <span class="nav-ico">
             <svg viewBox="0 0 24 24" fill="none">
               <defs>
@@ -791,7 +791,7 @@
             </svg>
           </span>
         </button>
-        <button class="tab-item" data-tab="transactions" type="button" aria-label="Tranzaksiyalarim">
+        <button class="tab-item" data-tab="transactions" type="button" data-i18n-aria="nav.tx" aria-label="Tranzaksiyalarim">
           <span class="nav-ico">
             <svg viewBox="0 0 24 24" fill="none">
               <defs>
@@ -805,7 +805,7 @@
             </svg>
           </span>
         </button>
-        <button class="tab-item transfer-item" data-tab="buy" type="button" aria-label="Yuan olish">
+        <button class="tab-item transfer-item" data-tab="buy" type="button" data-i18n-aria="nav.transfer" aria-label="Yuan olish">
           <span class="transfer-ring" aria-hidden="true"></span>
           <span class="transfer-halo" aria-hidden="true"></span>
           <span class="transfer-ico">
@@ -814,7 +814,7 @@
             </svg>
           </span>
         </button>
-        <button class="tab-item" data-tab="qrs" type="button" aria-label="QR kodlarim">
+        <button class="tab-item" data-tab="qrs" type="button" data-i18n-aria="nav.qr" aria-label="QR kodlarim">
           <span class="nav-ico">
             <svg viewBox="0 0 24 24" fill="none">
               <defs>
@@ -830,7 +830,7 @@
             </svg>
           </span>
         </button>
-        <button class="tab-item" data-tab="profile" type="button" aria-label="Profil">
+        <button class="tab-item" data-tab="profile" type="button" data-i18n-aria="nav.profile" aria-label="Profil">
           <span class="nav-ico">
             <svg viewBox="0 0 24 24" fill="none">
               <defs>
@@ -845,6 +845,6 @@
         </button>
       </nav>
     </div>
-    <script src="/app.js?v=15"></script>
+    <script src="/app.js?v=16"></script>
   </body>
 </html>
