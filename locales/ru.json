@@ -34,6 +34,8 @@
   "info_updated": "✅ Ваши данные обновлены!\n\n👤 {name}\n📱 {phone}",
   "notify_tx": "🔔 <b>Новая операция!</b>\n\n🆔 <b>{tx_id}</b>\n💴 {cny} CNY · 💵 {uzs} UZS\n\n⏳ Чек на проверке. После подтверждения юани поступят на ваш счёт.",
   "notify_admin_tx": "🔔 <b>У вас новый перевод!</b>\n\n🆔 <b>{tx_id}</b>\n👤 {name}{username}\n📱 {phone}\n💴 <b>{cny} CNY</b> · 💵 <b>{uzs} UZS</b>\n💳 {card}\n\n⏳ Проверьте и подтвердите или отмените.",
+  "notify_admin_done": "✅ <b>Транзакция выполнена</b>\n\n🆔 <b>{tx_id}</b>\n👤 {name}{username}\n💴 <b>{cny} CNY</b> · 💵 <b>{uzs} UZS</b>\n🛡 Админ: {by_admin}",
+  "notify_admin_cancelled": "❌ <b>Транзакция отменена</b>\n\n🆔 <b>{tx_id}</b>\n👤 {name}{username}\n💴 <b>{cny} CNY</b> · 💵 <b>{uzs} UZS</b>\n📝 Причина: {reason}\n🛡 Админ: {by_admin}",
   "notify_admin_open": "🛡 Открыть админ-панель",
   "notify_done": "✅ <b>Операция подтверждена!</b>\n\n🆔 <b>{tx_id}</b>\n💴 {cny} CNY · 💵 {uzs} UZS\n\n🎉 Юани отправлены на ваш счёт. Спасибо за покупку!\n\n⭐ Если сервис понравился — оставьте короткий <b>отзыв</b>.\n💚 <b>@YuanGo</b> — быстро и надёжно",
   "notify_cancelled": "❌ <b>Операция отменена</b>\n\n🆔 <b>{tx_id}</b>\n💴 {cny} CNY · 💵 {uzs} UZS\n\n📝 Причина: {reason}",

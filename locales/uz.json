@@ -34,6 +34,8 @@
   "info_updated": "✅ Ma'lumotlaringiz yangilandi!\n\n👤 {name}\n📱 {phone}",
   "notify_tx": "🔔 <b>Yangi tranzaksiya!</b>\n\n🆔 <b>{tx_id}</b>\n💴 {cny} CNY · 💵 {uzs} UZS\n\n⏳ To'lov cheki tekshirilmoqda. Tasdiqlangach, yuan hisobingizga o'tkaziladi.",
   "notify_admin_tx": "🔔 <b>Sizda yangi o‘tkazma mavjud!</b>\n\n🆔 <b>{tx_id}</b>\n👤 {name}{username}\n📱 {phone}\n💴 <b>{cny} CNY</b> · 💵 <b>{uzs} UZS</b>\n💳 {card}\n\n⏳ Tekshirib, tasdiqlang yoki bekor qiling.",
+  "notify_admin_done": "✅ <b>Tranzaksiya amalga oshirildi</b>\n\n🆔 <b>{tx_id}</b>\n👤 {name}{username}\n💴 <b>{cny} CNY</b> · 💵 <b>{uzs} UZS</b>\n🛡 Admin: {by_admin}",
+  "notify_admin_cancelled": "❌ <b>Tranzaksiya bekor qilindi</b>\n\n🆔 <b>{tx_id}</b>\n👤 {name}{username}\n💴 <b>{cny} CNY</b> · 💵 <b>{uzs} UZS</b>\n📝 Sabab: {reason}\n🛡 Admin: {by_admin}",
   "notify_admin_open": "🛡 Admin panelni ochish",
   "notify_done": "✅ <b>Tranzaksiya tasdiqlandi!</b>\n\n🆔 <b>{tx_id}</b>\n💴 {cny} CNY · 💵 {uzs} UZS\n\n🎉 Yuan hisobingizga yuborildi. Xaridingiz uchun rahmat!\n\n⭐ Agar xizmat yoqgan bo‘lsa, qisqa <b>sharh</b> yozib qoldiring.\n💚 <b>@YuanGo</b> — tezkor va ishonchli",
   "notify_cancelled": "❌ <b>Tranzaksiya bekor qilindi</b>\n\n🆔 <b>{tx_id}</b>\n💴 {cny} CNY · 💵 {uzs} UZS\n\n📝 Sabab: {reason}",

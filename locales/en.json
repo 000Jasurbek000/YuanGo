@@ -34,6 +34,8 @@
   "info_updated": "✅ Your info has been updated!\n\n👤 {name}\n📱 {phone}",
   "notify_tx": "🔔 <b>New transaction!</b>\n\n🆔 <b>{tx_id}</b>\n💴 {cny} CNY · 💵 {uzs} UZS\n\n⏳ Your receipt is being reviewed. Once confirmed, the yuan will be sent to your account.",
   "notify_admin_tx": "🔔 <b>You have a new transfer!</b>\n\n🆔 <b>{tx_id}</b>\n👤 {name}{username}\n📱 {phone}\n💴 <b>{cny} CNY</b> · 💵 <b>{uzs} UZS</b>\n💳 {card}\n\n⏳ Please review and approve or cancel.",
+  "notify_admin_done": "✅ <b>Transaction completed</b>\n\n🆔 <b>{tx_id}</b>\n👤 {name}{username}\n💴 <b>{cny} CNY</b> · 💵 <b>{uzs} UZS</b>\n🛡 Admin: {by_admin}",
+  "notify_admin_cancelled": "❌ <b>Transaction cancelled</b>\n\n🆔 <b>{tx_id}</b>\n👤 {name}{username}\n💴 <b>{cny} CNY</b> · 💵 <b>{uzs} UZS</b>\n📝 Reason: {reason}\n🛡 Admin: {by_admin}",
   "notify_admin_open": "🛡 Open admin panel",
   "notify_done": "✅ <b>Transaction approved!</b>\n\n🆔 <b>{tx_id}</b>\n💴 {cny} CNY · 💵 {uzs} UZS\n\n🎉 The yuan has been sent to your account. Thank you!\n\n⭐ If you liked the service, leave a short <b>review</b>.\n💚 <b>@YuanGo</b> — fast and reliable",
   "notify_cancelled": "❌ <b>Transaction cancelled</b>\n\n🆔 <b>{tx_id}</b>\n💴 {cny} CNY · 💵 {uzs} UZS\n\n📝 Reason: {reason}",

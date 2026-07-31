@@ -1058,6 +1058,40 @@ def notify_admins_new_tx(tx: dict) -> None:
             print(f"Admin TX notify xatosi ({admin_id}): {exc}")
 
 
+def notify_admins_tx_result(
+    tx: dict,
+    status: str,
+    reason: str = "",
+    by_admin_id: int | None = None,
+) -> None:
+    """Tasdiqlash / bekor qilish haqida barcha adminlarga xabar."""
+    user = db.get_user(int(tx["telegram_id"])) or {}
+    name = full_name(user) or "Noma'lum"
+    username = f" · @{user['username']}" if user.get("username") else ""
+    cny = f"{float(tx.get('cny') or 0):g}"
+    uzs = f"{float(tx.get('uzs') or 0):,.0f}".replace(",", " ")
+    by_admin = "Admin"
+    if by_admin_id:
+        admin_user = db.get_user(int(by_admin_id)) or {}
+        by_admin = full_name(admin_user) or str(by_admin_id)
+
+    key = "notify_admin_done" if status == "done" else "notify_admin_cancelled"
+    for admin_id in db.list_admin_chat_ids(OWNER_TELEGRAM_ID):
+        try:
+            text = t(admin_id, key).format(
+                tx_id=tx["tx_id"],
+                name=name,
+                username=username,
+                cny=cny,
+                uzs=uzs,
+                reason=reason or "—",
+                by_admin=by_admin,
+            )
+            bot.send_message(admin_id, text, parse_mode="HTML")
+        except Exception as exc:
+            print(f"Admin TX result notify xatosi ({admin_id}): {exc}")
+
+
 @app.get("/api/tx")
 def api_tx_list():
     """Foydalanuvchining tranzaksiya statuslari (Mini App sinxron uchun)."""
@@ -1854,7 +1888,8 @@ def api_admin_reviews_republish(review_id: int):
 
 @app.post("/api/admin/tx/<tx_id>/approve")
 def api_admin_tx_approve(tx_id: str):
-    if not _check_admin():
+    admin_id = _check_admin()
+    if not admin_id:
         return jsonify(ok=False, error="forbidden"), 403
     data = request.get_json(silent=True) or {}
     admin_receipt = str(data.get("admin_receipt") or "").strip()
@@ -1868,12 +1903,19 @@ def api_admin_tx_approve(tx_id: str):
     db.set_tx_status(tx_id, "done", admin_receipt=admin_receipt)
     photo_path = UPLOADS_DIR / Path(admin_receipt).name
     _notify_tx_status(tx, "notify_done", photo_path=photo_path)
+    threading.Thread(
+        target=notify_admins_tx_result,
+        args=(tx, "done"),
+        kwargs={"by_admin_id": admin_id},
+        daemon=True,
+    ).start()
     return jsonify(ok=True)
 
 
 @app.post("/api/admin/tx/<tx_id>/cancel")
 def api_admin_tx_cancel(tx_id: str):
-    if not _check_admin():
+    admin_id = _check_admin()
+    if not admin_id:
         return jsonify(ok=False, error="forbidden"), 403
     data = request.get_json(silent=True) or {}
     reason = str(data.get("reason") or "").strip()
@@ -1884,6 +1926,12 @@ def api_admin_tx_cancel(tx_id: str):
         return jsonify(ok=False, error="not found"), 404
     db.set_tx_status(tx_id, "cancelled", reason)
     _notify_tx_status(tx, "notify_cancelled", reason)
+    threading.Thread(
+        target=notify_admins_tx_result,
+        args=(tx, "cancelled"),
+        kwargs={"reason": reason, "by_admin_id": admin_id},
+        daemon=True,
+    ).start()
     return jsonify(ok=True)
 
 
