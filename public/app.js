@@ -267,8 +267,7 @@ function renderPaymentCards() {
       const selected = String(card.id) === String(state.selectedCard);
       const brandClass =
         card.brand === "humo" ? "pay-card-humo" : card.brand === "visa" ? "pay-card-visa" : "pay-card-uzcard";
-      const digits = String(card.number || "").replace(/\D/g, "");
-      const canCopy = digits.length >= 12;
+      const canCopy = card.can_copy !== false;
       return `
         <div class="pay-card ${brandClass} ${selected ? "selected" : ""}" data-card="${card.id}" role="button" tabindex="0" aria-pressed="${selected}">
           <div class="pay-card-top">
@@ -286,14 +285,28 @@ function renderPaymentCards() {
               <small>KARTA EGASI</small>
               <strong>${escapeHtml(ownerInitials(card.owner_name))}</strong>
             </div>
-            <button class="pay-card-copy${canCopy ? "" : " is-disabled"}" type="button" data-copy="${canCopy ? digits : ""}" ${canCopy ? "" : "disabled"}>
+            <div>
+              <small>AMAL QILISH</small>
+              <strong>**/**</strong>
+            </div>
+            <button class="pay-card-copy" type="button" data-copy-card="${card.id}" ${canCopy ? "" : "disabled"}>
               <span class="pay-card-copy-ico" aria-hidden="true">⧉</span>
-              <span class="pay-card-copy-label" data-i18n="card.copy">${t("card.copy")}</span>
+              <span class="pay-card-copy-label">${t("card.copy")}</span>
             </button>
           </div>
         </div>`;
     })
     .join("");
+}
+
+async function fetchCardNumber(cardId) {
+  const headers = apiHeaders(false);
+  const res = await fetch(`/api/cards/${cardId}/number`, { headers });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok || !data.number) {
+    throw new Error(data.error || "copy failed");
+  }
+  return String(data.number).replace(/\D/g, "");
 }
 
 function updateBuyCalc() {
@@ -1297,26 +1310,31 @@ async function syncCards() {
 async function copyText(text) {
   const value = String(text || "");
   if (!value) return false;
+
+  // Telegram WebView da async fetch'dan keyin clipboard API ko'pincha ishlamaydi —
+  // avval execCommand fallback, keyin Clipboard API.
+  try {
+    const input = document.createElement("textarea");
+    input.value = value;
+    input.setAttribute("readonly", "");
+    input.setAttribute("aria-hidden", "true");
+    input.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0;";
+    document.body.appendChild(input);
+    input.focus({ preventScroll: true });
+    input.select();
+    input.setSelectionRange(0, value.length);
+    const ok = document.execCommand("copy");
+    document.body.removeChild(input);
+    if (ok) return true;
+  } catch (_) {}
+
   try {
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(value);
       return true;
     }
   } catch (_) {}
-  try {
-    const input = document.createElement("textarea");
-    input.value = value;
-    input.setAttribute("readonly", "");
-    input.style.position = "fixed";
-    input.style.opacity = "0";
-    document.body.appendChild(input);
-    input.select();
-    const ok = document.execCommand("copy");
-    document.body.removeChild(input);
-    return ok;
-  } catch (_) {
-    return false;
-  }
+  return false;
 }
 
 async function syncReviews() {
@@ -1647,25 +1665,28 @@ function bindUi() {
     if (copyBtn) {
       e.preventDefault();
       e.stopPropagation();
-      const digits = copyBtn.dataset.copy || "";
-      if (!digits) {
-        toast(t("card.copyFail"));
-        return;
-      }
-      const ok = await copyText(digits);
-      if (!ok) {
-        toast(t("card.copyFail"));
-        return;
-      }
-      copyBtn.classList.add("is-copied");
+      if (copyBtn.disabled || copyBtn.classList.contains("is-loading")) return;
+      const cardId = copyBtn.dataset.copyCard;
       const label = copyBtn.querySelector(".pay-card-copy-label");
-      if (label) label.textContent = t("card.copied");
-      toast(t("card.copied"));
-      haptic("success");
-      setTimeout(() => {
-        copyBtn.classList.remove("is-copied");
-        if (label) label.textContent = t("card.copy");
-      }, 1600);
+      copyBtn.classList.add("is-loading");
+      try {
+        const digits = await fetchCardNumber(cardId);
+        const ok = await copyText(digits);
+        if (!ok) throw new Error("clipboard");
+        copyBtn.classList.add("is-copied");
+        if (label) label.textContent = t("card.copied");
+        toast(t("card.copied"));
+        haptic("success");
+        setTimeout(() => {
+          copyBtn.classList.remove("is-copied");
+          if (label) label.textContent = t("card.copy");
+        }, 1600);
+      } catch (_) {
+        toast(t("card.copyFail"));
+        haptic("medium");
+      } finally {
+        copyBtn.classList.remove("is-loading");
+      }
       return;
     }
     const card = e.target.closest(".pay-card");

@@ -1682,10 +1682,8 @@ def api_admin_cards_delete(card_id: int):
 
 @app.get("/api/cards")
 def api_public_cards():
-    """Mini App uchun faol kartalar.
-    To'liq raqam faqat haqiqiy Telegram WebApp initData bilan beriladi.
-    """
-    verified = _verified_telegram_user()
+    """Mini App uchun faol kartalar (ro'yxatda to'liq raqam yo'q)."""
+    verified = bool(_verified_telegram_user())
     cards = []
     for c in db.list_cards(active_only=True):
         digits = re.sub(r"\D", "", c["number"])
@@ -1694,18 +1692,31 @@ def api_public_cards():
             if len(digits) >= 8
             else c["number"]
         )
-        item = {
-            "id": c["id"],
-            "brand": c["brand"],
-            "title": c["title"],
-            "owner_name": c["owner_name"],
-            "masked": masked,
-            "number": "",
-        }
-        if verified:
-            item["number"] = c["number"]
-        cards.append(item)
-    return jsonify(ok=True, cards=cards, authenticated=bool(verified))
+        cards.append(
+            {
+                "id": c["id"],
+                "brand": c["brand"],
+                "title": c["title"],
+                "owner_name": c["owner_name"],
+                "masked": masked,
+                "can_copy": verified and len(digits) >= 12,
+            }
+        )
+    return jsonify(ok=True, cards=cards, authenticated=verified)
+
+
+@app.get("/api/cards/<int:card_id>/number")
+def api_card_number(card_id: int):
+    """Nusxa olish uchun to'liq raqam — faqat Telegram WebApp imzosi bilan."""
+    if not _verified_telegram_user():
+        return jsonify(ok=False, error="auth required"), 401
+    card = db.get_card(card_id)
+    if not card or not card.get("active"):
+        return jsonify(ok=False, error="not found"), 404
+    digits = re.sub(r"\D", "", str(card.get("number") or ""))
+    if len(digits) < 12:
+        return jsonify(ok=False, error="invalid card"), 400
+    return jsonify(ok=True, number=digits)
 
 
 @app.get("/api/config")
