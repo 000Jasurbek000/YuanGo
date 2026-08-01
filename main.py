@@ -331,6 +331,26 @@ def continue_registration(chat_id: int, *, for_operator: bool = False) -> None:
     _prompt_language(chat_id, for_operator=for_operator)
 
 
+@bot.message_handler(commands=["reregister", "qayta"])
+def cmd_reregister(message: types.Message) -> None:
+    """Mavjud akkauntda qayta ro'yxatdan o'tishni sinash (test)."""
+    chat_id = message.chat.id
+    db.ensure_user(
+        chat_id,
+        message.from_user.username if message.from_user else "",
+    )
+    db.reset_registration(chat_id)
+    bot.send_message(
+        chat_id,
+        "🔄 Ro‘yxat tozalandi.\n"
+        "Qayta boshlaymiz — tilni tanlang.\n\n"
+        "<i>Test buyrug‘i: /reregister yoki /qayta</i>",
+        parse_mode="HTML",
+        reply_markup=types.ReplyKeyboardRemove(),
+    )
+    continue_registration(chat_id, for_operator=is_operator(chat_id))
+
+
 @bot.message_handler(commands=["start"])
 def cmd_start(message: types.Message) -> None:
     chat_id = message.chat.id

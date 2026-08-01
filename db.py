@@ -245,6 +245,20 @@ def clear_reg_step(telegram_id: int) -> None:
     set_reg_step(telegram_id, "")
 
 
+def reset_registration(telegram_id: int) -> None:
+    """Test uchun: foydalanuvchini qayta ro'yxatdan o'tish holatiga qaytaradi."""
+    ensure_user(telegram_id)
+    update_user(
+        telegram_id,
+        first_name="",
+        last_name="",
+        phone="",
+        registered=0,
+        reg_step="",
+    )
+    clear_review_state(telegram_id)
+
+
 def get_review_state(telegram_id: int) -> dict:
     user = get_user(telegram_id)
     raw = str((user or {}).get("review_state") or "").strip()
