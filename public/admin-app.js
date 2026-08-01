@@ -59,11 +59,13 @@ function fmt(n) {
 async function api(path, options = {}) {
   const id = adminId();
   const sep = path.includes("?") ? "&" : "?";
+  const headers = { ...API_HEADERS, ...(options.headers || {}) };
+  if (tg?.initData) headers["X-Telegram-Init-Data"] = tg.initData;
   const res = await fetch(`${path}${sep}tg_id=${id}`, {
     ...options,
-    headers: { ...API_HEADERS, ...(options.headers || {}) },
+    headers,
   });
-  if (res.status === 403) throw new Error("forbidden");
+  if (res.status === 401 || res.status === 403) throw new Error("forbidden");
   return res.json();
 }
 
@@ -243,9 +245,11 @@ async function uploadAdminReceipt(file) {
   const form = new FormData();
   form.append("tg_id", String(adminId()));
   form.append("file", file, file.name || "admin-receipt.jpg");
+  const headers = { "ngrok-skip-browser-warning": "true" };
+  if (tg?.initData) headers["X-Telegram-Init-Data"] = tg.initData;
   const res = await fetch(`/api/upload?tg_id=${adminId()}`, {
     method: "POST",
-    headers: { "ngrok-skip-browser-warning": "true" },
+    headers,
     body: form,
   });
   const data = await res.json();

@@ -3,6 +3,8 @@
 Serverga / GitHub ga yuklash uchun: main.py
 """
 
+import hashlib
+import hmac
 import json
 import os
 import re
@@ -12,6 +14,7 @@ import threading
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
+from urllib.parse import parse_qsl
 
 try:
     import fcntl
@@ -1026,10 +1029,13 @@ def api_tx_create():
         print(f"[api/tx] JSON parse xatosi, content-length={request.content_length}")
         return jsonify(ok=False, error="invalid json — upload images separately"), 400
 
-    tg_id = data.get("tg_id")
+    verified = _verified_telegram_user()
+    if not verified:
+        return jsonify(ok=False, error="auth required"), 401
+    tg_id = int(verified["id"])
     tx_id = data.get("tx_id")
-    if not tg_id or not tx_id:
-        return jsonify(ok=False, error="tg_id and tx_id required"), 400
+    if not tx_id:
+        return jsonify(ok=False, error="tx_id required"), 400
 
     status = str(data.get("status") or "progress")
     if status not in ("progress", "done", "cancelled"):
@@ -1185,15 +1191,68 @@ def api_public_purchases():
     return jsonify(ok=True, purchases=items)
 
 
-# ---------------------------------------------------------------- Admin API
+# ---------------------------------------------------------------- Admin API / Telegram WebApp auth
+
+def verify_telegram_init_data(init_data: str, max_age_sec: int = 86400) -> dict | None:
+    """Telegram Mini App initData imzosini tekshiradi. Muvaffaqiyatda user dict."""
+    if not init_data or not BOT_TOKEN:
+        return None
+    try:
+        parsed = dict(parse_qsl(init_data, keep_blank_values=True))
+    except (TypeError, ValueError):
+        return None
+    received_hash = parsed.pop("hash", None)
+    if not received_hash:
+        return None
+    data_check = "\n".join(f"{k}={v}" for k, v in sorted(parsed.items()))
+    secret_key = hmac.new(b"WebAppData", BOT_TOKEN.encode("utf-8"), hashlib.sha256).digest()
+    calc_hash = hmac.new(secret_key, data_check.encode("utf-8"), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(calc_hash, received_hash):
+        return None
+    try:
+        auth_date = int(parsed.get("auth_date") or 0)
+    except (TypeError, ValueError):
+        return None
+    if not auth_date or (time.time() - auth_date) > max_age_sec:
+        return None
+    user_raw = parsed.get("user")
+    if not user_raw:
+        return None
+    try:
+        user = json.loads(user_raw)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return None
+    if not isinstance(user, dict) or not user.get("id"):
+        return None
+    return user
+
+
+def _request_init_data() -> str:
+    return (
+        request.headers.get("X-Telegram-Init-Data")
+        or request.headers.get("X-Telegram-Init-Data".lower())
+        or request.args.get("initData")
+        or ""
+    ).strip()
+
+
+def _verified_telegram_user() -> dict | None:
+    return verify_telegram_init_data(_request_init_data())
+
 
 def _admin_user() -> dict | None:
-    tg_id = request.args.get("tg_id", type=int)
-    if not tg_id:
-        data = request.get_json(silent=True) or {}
-        tg_id = int(data.get("tg_id") or 0)
+    """Faqat haqiqiy Telegram WebApp initData bilan (tg_id soxtalashtirib bo'lmaydi)."""
+    tg_user = _verified_telegram_user()
+    if not tg_user:
+        return None
+    try:
+        tg_id = int(tg_user.get("id") or 0)
+    except (TypeError, ValueError):
+        return None
     if not tg_id:
         return None
+    username = str(tg_user.get("username") or "")
+    db.ensure_user(tg_id, username)
     sync_owner(tg_id)
     user = db.get_user(tg_id)
     if not user:
@@ -1216,6 +1275,37 @@ def _check_super_admin() -> int | None:
     if is_owner(tid) or user.get("is_super_admin"):
         return tid
     return None
+
+
+def notify_admins_card_change(action: str, card: dict, by_admin_id: int) -> None:
+    """Karta qo'shish / o'zgartirish / o'chirish haqida adminlarga xabar."""
+    admin_user = db.get_user(by_admin_id) or {}
+    by_name = full_name(admin_user) or str(by_admin_id)
+    brand = str(card.get("brand") or "").upper()
+    title = card.get("title") or "—"
+    digits = re.sub(r"\D", "", str(card.get("number") or ""))
+    masked = (
+        f"{digits[:4]} **** **** {digits[-4:]}"
+        if len(digits) >= 8
+        else (card.get("number") or "—")
+    )
+    action_map = {
+        "create": "➕ Karta qo‘shildi",
+        "update": "✏️ Karta o‘zgartirildi",
+        "delete": "🗑 Karta o‘chirildi",
+    }
+    title_line = action_map.get(action, "💳 Karta yangilandi")
+    text = (
+        f"🔐 <b>{title_line}</b>\n\n"
+        f"🏷 {title}\n"
+        f"💳 {brand} · <code>{masked}</code>\n"
+        f"🛡 Admin: {by_name}"
+    )
+    for admin_id in db.list_admin_chat_ids(OWNER_TELEGRAM_ID):
+        try:
+            bot.send_message(admin_id, text, parse_mode="HTML")
+        except Exception as exc:
+            print(f"Card notify xatosi ({admin_id}): {exc}")
 
 
 @app.get("/admin")
@@ -1524,7 +1614,8 @@ def api_admin_cards():
 
 @app.post("/api/admin/cards")
 def api_admin_cards_create():
-    if not _check_super_admin():
+    admin_id = _check_super_admin()
+    if not admin_id:
         return jsonify(ok=False, error="forbidden"), 403
     data = request.get_json(silent=True) or {}
     brand = str(data.get("brand") or "").lower().strip()
@@ -1538,12 +1629,18 @@ def api_admin_cards_create():
     if not owner_name or not title:
         return jsonify(ok=False, error="owner_name and title required"), 400
     card = db.create_card(brand, number, owner_name, title)
+    threading.Thread(
+        target=notify_admins_card_change,
+        args=("create", card, admin_id),
+        daemon=True,
+    ).start()
     return jsonify(ok=True, card=card)
 
 
 @app.post("/api/admin/cards/<int:card_id>")
 def api_admin_cards_update(card_id: int):
-    if not _check_super_admin():
+    admin_id = _check_super_admin()
+    if not admin_id:
         return jsonify(ok=False, error="forbidden"), 403
     data = request.get_json(silent=True) or {}
     fields = {}
@@ -1563,20 +1660,35 @@ def api_admin_cards_update(card_id: int):
     card = db.update_card(card_id, **fields)
     if not card:
         return jsonify(ok=False, error="not found"), 404
+    threading.Thread(
+        target=notify_admins_card_change,
+        args=("update", card, admin_id),
+        daemon=True,
+    ).start()
     return jsonify(ok=True, card=card)
 
 
 @app.post("/api/admin/cards/<int:card_id>/delete")
 def api_admin_cards_delete(card_id: int):
-    if not _check_super_admin():
+    admin_id = _check_super_admin()
+    if not admin_id:
         return jsonify(ok=False, error="forbidden"), 403
+    card = db.get_card(card_id) or {"id": card_id, "brand": "", "title": "", "number": ""}
     db.delete_card(card_id)
+    threading.Thread(
+        target=notify_admins_card_change,
+        args=("delete", card, admin_id),
+        daemon=True,
+    ).start()
     return jsonify(ok=True)
 
 
 @app.get("/api/cards")
 def api_public_cards():
-    """Mini App uchun faol kartalar."""
+    """Mini App uchun faol kartalar.
+    To'liq raqam faqat haqiqiy Telegram WebApp initData bilan beriladi.
+    """
+    verified = _verified_telegram_user()
     cards = []
     for c in db.list_cards(active_only=True):
         digits = re.sub(r"\D", "", c["number"])
@@ -1585,17 +1697,18 @@ def api_public_cards():
             if len(digits) >= 8
             else c["number"]
         )
-        cards.append(
-            {
-                "id": c["id"],
-                "brand": c["brand"],
-                "title": c["title"],
-                "owner_name": c["owner_name"],
-                "number": c["number"],
-                "masked": masked,
-            }
-        )
-    return jsonify(ok=True, cards=cards)
+        item = {
+            "id": c["id"],
+            "brand": c["brand"],
+            "title": c["title"],
+            "owner_name": c["owner_name"],
+            "masked": masked,
+            "number": "",
+        }
+        if verified:
+            item["number"] = c["number"]
+        cards.append(item)
+    return jsonify(ok=True, cards=cards, authenticated=bool(verified))
 
 
 @app.get("/api/config")

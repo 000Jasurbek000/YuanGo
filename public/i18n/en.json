@@ -199,5 +199,8 @@
   "notifications.cancelledText": "See the cancellation reason in transaction details",
   "notifications.empty": "No notifications yet",
   "notifications.new": "New",
-  "notifications.read": "Viewed"
+  "notifications.read": "Viewed",
+  "card.copy": "Copy number",
+  "card.copied": "Copied ✓",
+  "card.copyFail": "Could not copy"
 }

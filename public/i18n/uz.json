@@ -199,5 +199,8 @@
   "notifications.cancelledText": "Bekor qilish sababini tafsilotlarda ko‘ring",
   "notifications.empty": "Hozircha bildirishnomalar yo‘q",
   "notifications.new": "Yangi",
-  "notifications.read": "Ko‘rilgan"
+  "notifications.read": "Ko‘rilgan",
+  "card.copy": "Nusxa olish",
+  "card.copied": "Nusxa olindi ✓",
+  "card.copyFail": "Nusxa olinmadi"
 }

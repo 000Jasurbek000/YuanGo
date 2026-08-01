@@ -18,7 +18,7 @@ async function loadI18n() {
   const langs = ["uz", "ru", "en"];
   await Promise.all(
     langs.map(async (lang) => {
-      const res = await fetch(`/i18n/${lang}.json?v=1`, {
+      const res = await fetch(`/i18n/${lang}.json?v=2`, {
         headers: { "ngrok-skip-browser-warning": "true" },
       });
       if (!res.ok) throw new Error(`i18n ${lang}: ${res.status}`);
@@ -268,8 +268,9 @@ function renderPaymentCards() {
       const brandClass =
         card.brand === "humo" ? "pay-card-humo" : card.brand === "visa" ? "pay-card-visa" : "pay-card-uzcard";
       const digits = String(card.number || "").replace(/\D/g, "");
+      const canCopy = digits.length >= 12;
       return `
-        <button class="pay-card ${brandClass} ${selected ? "selected" : ""}" type="button" data-card="${card.id}" aria-pressed="${selected}">
+        <div class="pay-card ${brandClass} ${selected ? "selected" : ""}" data-card="${card.id}" role="button" tabindex="0" aria-pressed="${selected}">
           <div class="pay-card-top">
             <span class="pay-card-brand">${(card.brand || "").toUpperCase()}</span>
             <span class="pay-card-choice"><i></i><b>${selected ? "Tanlangan" : "Tanlash"}</b></span>
@@ -285,13 +286,12 @@ function renderPaymentCards() {
               <small>KARTA EGASI</small>
               <strong>${escapeHtml(ownerInitials(card.owner_name))}</strong>
             </div>
-            <div>
-              <small>AMAL QILISH</small>
-              <strong>**/**</strong>
-            </div>
-            <span class="copy" data-copy="${digits}">⧉ Nusxa</span>
+            <button class="pay-card-copy${canCopy ? "" : " is-disabled"}" type="button" data-copy="${canCopy ? digits : ""}" ${canCopy ? "" : "disabled"}>
+              <span class="pay-card-copy-ico" aria-hidden="true">⧉</span>
+              <span class="pay-card-copy-label" data-i18n="card.copy">${t("card.copy")}</span>
+            </button>
           </div>
-        </button>`;
+        </div>`;
     })
     .join("");
 }
@@ -1019,7 +1019,7 @@ async function uploadImage(dataUrl, required = false) {
     form.append("file", uploadBlob, "image.jpg");
     const res = await fetch("/api/upload", {
       method: "POST",
-      headers: { "ngrok-skip-browser-warning": "true" },
+      headers: apiHeaders(false),
       body: form,
     });
     const data = await res.json();
@@ -1038,7 +1038,7 @@ async function pushTransactionToServer(txItem) {
     const qr = String(txItem.qrImageUrl || "");
     const res = await fetch("/api/tx", {
       method: "POST",
-      headers: API_HEADERS,
+      headers: apiHeaders(true),
       body: JSON.stringify({
         tg_id: id,
         tx_id: txItem.id,
@@ -1069,10 +1069,14 @@ function tgUserId() {
   return tg?.initDataUnsafe?.user?.id || (fromUrl ? Number(fromUrl) : null);
 }
 
-const API_HEADERS = {
-  "Content-Type": "application/json",
-  "ngrok-skip-browser-warning": "true",
-};
+function apiHeaders(json = true) {
+  const headers = { "ngrok-skip-browser-warning": "true" };
+  if (json) headers["Content-Type"] = "application/json";
+  if (tg?.initData) headers["X-Telegram-Init-Data"] = tg.initData;
+  return headers;
+}
+
+const API_HEADERS = apiHeaders(true);
 
 async function syncPublicPurchases() {
   try {
@@ -1276,7 +1280,7 @@ async function loadRateStats(days = rateStatsDays) {
 
 async function syncCards() {
   try {
-    const res = await fetch("/api/cards", { headers: API_HEADERS });
+    const res = await fetch("/api/cards", { headers: apiHeaders(true) });
     const data = await res.json();
     if (!data.ok) return;
     paymentCards = data.cards || [];
@@ -1287,6 +1291,31 @@ async function syncCards() {
     renderPaymentCards();
   } catch (err) {
     console.warn("[YuanGo] Kartalar yuklanmadi:", err);
+  }
+}
+
+async function copyText(text) {
+  const value = String(text || "");
+  if (!value) return false;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return true;
+    }
+  } catch (_) {}
+  try {
+    const input = document.createElement("textarea");
+    input.value = value;
+    input.setAttribute("readonly", "");
+    input.style.position = "fixed";
+    input.style.opacity = "0";
+    document.body.appendChild(input);
+    input.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(input);
+    return ok;
+  } catch (_) {
+    return false;
   }
 }
 
@@ -1613,15 +1642,34 @@ function bindUi() {
     saveState();
   });
 
-  document.getElementById("cardList")?.addEventListener("click", (e) => {
-    const card = e.target.closest(".pay-card");
-    if (!card) return;
-    if (e.target.classList.contains("copy")) {
-      navigator.clipboard?.writeText(e.target.dataset.copy || "");
-      toast(t("toast.copied"));
-      haptic();
+  document.getElementById("cardList")?.addEventListener("click", async (e) => {
+    const copyBtn = e.target.closest(".pay-card-copy");
+    if (copyBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      const digits = copyBtn.dataset.copy || "";
+      if (!digits) {
+        toast(t("card.copyFail"));
+        return;
+      }
+      const ok = await copyText(digits);
+      if (!ok) {
+        toast(t("card.copyFail"));
+        return;
+      }
+      copyBtn.classList.add("is-copied");
+      const label = copyBtn.querySelector(".pay-card-copy-label");
+      if (label) label.textContent = t("card.copied");
+      toast(t("card.copied"));
+      haptic("success");
+      setTimeout(() => {
+        copyBtn.classList.remove("is-copied");
+        if (label) label.textContent = t("card.copy");
+      }, 1600);
       return;
     }
+    const card = e.target.closest(".pay-card");
+    if (!card) return;
     state.selectedCard = card.dataset.card;
     saveState();
     renderPaymentCards();
