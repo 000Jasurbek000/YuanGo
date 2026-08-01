@@ -3,6 +3,8 @@
 .env.local
 yuango.db
 yuango.db-*
+.webhook_secret
+yuango_bot.lock
 users.json
 users.json.bak
 uploads/*

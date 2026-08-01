@@ -111,11 +111,8 @@ def labels(key: str) -> set:
     return {I18N[lang][key] for lang in I18N}
 
 
-# Ro'yxatdan o'tish / tahrirlash bosqichlari:
-# chat_id -> "name" | "phone" | "edit_name" | "edit_phone"
-PENDING_STEPS: dict = {}
-# Sharh oqimi: chat_id -> {step: "ask"|"confirm", tx_id, text}
-REVIEW_STATE: dict = {}
+# Ro'yxatdan o'tish / sharh holati endi DB da (reg_step, review_state).
+# Passenger multi-worker da xotira dict ishlamaydi.
 
 
 def migrate_legacy_users() -> None:
@@ -305,6 +302,35 @@ def send_start_menu(chat_id: int, text: str | None = None) -> None:
 
 # ---------------------------------------------------------------- Registration
 
+def _prompt_language(chat_id: int, for_operator: bool = False) -> None:
+    """Til tanlash — faqat step yangi o'zgaganda yoki foydalanuvchi /start qilganda."""
+    text = (
+        "🌐 Foydalanuvchi uchun tilni tanlang · Выберите язык · Choose a language:"
+        if for_operator
+        else "🌐 Tilni tanlang · Выберите язык · Choose a language:"
+    )
+    bot.send_message(chat_id, text, reply_markup=lang_keyboard())
+
+
+def continue_registration(chat_id: int, *, for_operator: bool = False) -> None:
+    """Ro'yxatdan o'tishni DB dagi bosqichdan davom ettirish (multi-worker xavfsiz)."""
+    step = db.get_reg_step(chat_id)
+    if step in ("name", "edit_name"):
+        bot.send_message(chat_id, t(chat_id, "ask_name"), parse_mode="HTML")
+        return
+    if step in ("phone", "edit_phone"):
+        bot.send_message(
+            chat_id,
+            t(chat_id, "ask_phone"),
+            reply_markup=phone_keyboard(chat_id),
+        )
+        return
+    # lang yoki bo'sh
+    if step != "lang":
+        db.set_reg_step(chat_id, "lang")
+    _prompt_language(chat_id, for_operator=for_operator)
+
+
 @bot.message_handler(commands=["start"])
 def cmd_start(message: types.Message) -> None:
     chat_id = message.chat.id
@@ -320,25 +346,16 @@ def cmd_start(message: types.Message) -> None:
     if is_operator(chat_id):
         send_start_menu(chat_id)
         if not is_registered(chat_id):
-            PENDING_STEPS.pop(chat_id, None)
-            bot.send_message(
-                chat_id,
-                "🌐 Foydalanuvchi uchun tilni tanlang · Выберите язык · Choose a language:",
-                reply_markup=lang_keyboard(),
-            )
+            continue_registration(chat_id, for_operator=True)
         return
 
     # Oddiy foydalanuvchi
     if is_registered(chat_id):
+        db.clear_reg_step(chat_id)
         send_start_menu(chat_id)
         return
 
-    PENDING_STEPS.pop(chat_id, None)
-    bot.send_message(
-        chat_id,
-        "🌐 Tilni tanlang · Выберите язык · Choose a language:",
-        reply_markup=lang_keyboard(),
-    )
+    continue_registration(chat_id)
 
 
 @bot.callback_query_handler(func=lambda c: c.data and c.data.startswith("lang:"))
@@ -363,6 +380,7 @@ def cb_language(call: types.CallbackQuery) -> None:
         pass
 
     if is_registered(chat_id):
+        db.clear_reg_step(chat_id)
         bot.send_message(
             chat_id,
             t(chat_id, "lang_changed").format(lang_name=LANG_NAMES[lang]),
@@ -371,12 +389,12 @@ def cb_language(call: types.CallbackQuery) -> None:
         )
         return
 
-    PENDING_STEPS[chat_id] = "name"
+    db.set_reg_step(chat_id, "name")
     bot.send_message(chat_id, t(chat_id, "ask_name"), parse_mode="HTML")
 
 
 @bot.message_handler(
-    func=lambda m: PENDING_STEPS.get(m.chat.id) in ("name", "edit_name")
+    func=lambda m: db.get_reg_step(m.chat.id) in ("name", "edit_name")
 )
 def reg_name(message: types.Message) -> None:
     chat_id = message.chat.id
@@ -392,8 +410,8 @@ def reg_name(message: types.Message) -> None:
         last_name=" ".join(parts[1:]),
     )
 
-    editing = PENDING_STEPS.get(chat_id) == "edit_name"
-    PENDING_STEPS[chat_id] = "edit_phone" if editing else "phone"
+    editing = db.get_reg_step(chat_id) == "edit_name"
+    db.set_reg_step(chat_id, "edit_phone" if editing else "phone")
     bot.send_message(
         chat_id,
         t(chat_id, "ask_phone"),
@@ -403,14 +421,14 @@ def reg_name(message: types.Message) -> None:
 
 @bot.message_handler(
     content_types=["contact"],
-    func=lambda m: PENDING_STEPS.get(m.chat.id) in ("phone", "edit_phone"),
+    func=lambda m: db.get_reg_step(m.chat.id) in ("phone", "edit_phone"),
 )
 def reg_phone_contact(message: types.Message) -> None:
     finish_registration(message.chat.id, message.contact.phone_number)
 
 
 @bot.message_handler(
-    func=lambda m: PENDING_STEPS.get(m.chat.id) in ("phone", "edit_phone")
+    func=lambda m: db.get_reg_step(m.chat.id) in ("phone", "edit_phone")
 )
 def reg_phone_text(message: types.Message) -> None:
     chat_id = message.chat.id
@@ -426,9 +444,9 @@ def finish_registration(chat_id, phone: str) -> None:
     if not phone.startswith("+"):
         phone = "+" + re.sub(r"\D", "", phone)
 
-    editing = PENDING_STEPS.get(chat_id) == "edit_phone" and is_registered(chat_id)
+    editing = db.get_reg_step(chat_id) == "edit_phone" and is_registered(chat_id)
     db.update_user(chat_id, phone=phone, registered=1)
-    PENDING_STEPS.pop(chat_id, None)
+    db.clear_reg_step(chat_id)
     sync_owner(chat_id)
 
     user = db.get_user(chat_id)
@@ -499,7 +517,7 @@ def cb_settings_lang(call: types.CallbackQuery) -> None:
 def cb_settings_edit(call: types.CallbackQuery) -> None:
     chat_id = call.message.chat.id
     bot.answer_callback_query(call.id)
-    PENDING_STEPS[chat_id] = "edit_name"
+    db.set_reg_step(chat_id, "edit_name")
     bot.send_message(chat_id, t(chat_id, "ask_name"), parse_mode="HTML")
 
 
@@ -709,9 +727,25 @@ def no_cache(response):
     response.headers["Pragma"] = "no-cache"
     return response
 
-import secrets as _secrets_module  # allaqachon "import secrets" bor bo'lsa, bu qatorni o'tkazib yuboring
+def _stable_webhook_secret() -> str:
+    """Har workerda bir xil webhook yo'li — aks holda /start ikki marta kelishi mumkin."""
+    env_secret = os.getenv("WEBHOOK_SECRET", "").strip()
+    if env_secret:
+        return env_secret
+    path = BASE_DIR / ".webhook_secret"
+    if path.exists():
+        saved = path.read_text(encoding="utf-8").strip()
+        if saved:
+            return saved
+    secret = secrets.token_hex(16)
+    try:
+        path.write_text(secret, encoding="utf-8")
+    except OSError as exc:
+        print(f"Webhook secret faylga yozilmadi: {exc}")
+    return secret
 
-WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "").strip() or secrets.token_hex(16)
+
+WEBHOOK_SECRET = _stable_webhook_secret()
 WEBHOOK_PATH = f"/bot/webhook/{WEBHOOK_SECRET}"
 
 
@@ -719,6 +753,12 @@ WEBHOOK_PATH = f"/bot/webhook/{WEBHOOK_SECRET}"
 def telegram_webhook():
     json_str = request.get_data().decode("utf-8")
     update = telebot.types.Update.de_json(json_str)
+    if update is None:
+        return "", 200
+    # Telegram qayta yuborgan update ikki marta ishlanmasin
+    if getattr(update, "update_id", None) is not None:
+        if not db.claim_telegram_update(update.update_id):
+            return "", 200
     bot.process_new_updates([update])
     return "", 200
 
@@ -1703,17 +1743,20 @@ def cb_review(call: types.CallbackQuery) -> None:
             return
         # Tasdiqlash xabaridagi tugmani darhol olib tashlash
         clear_message_buttons(chat_id, call.message.message_id)
-        REVIEW_STATE[chat_id] = {
-            "step": "ask",
-            "tx_id": tx_id,
-            "text": "",
-            "invite_msg_id": call.message.message_id,
-        }
+        db.set_review_state(
+            chat_id,
+            {
+                "step": "ask",
+                "tx_id": tx_id,
+                "text": "",
+                "invite_msg_id": call.message.message_id,
+            },
+        )
         bot.answer_callback_query(call.id)
         bot.send_message(chat_id, t(chat_id, "review_ask"), parse_mode="HTML")
         return
 
-    state = REVIEW_STATE.get(chat_id)
+    state = db.get_review_state(chat_id)
     if not state:
         clear_message_buttons(chat_id, call.message.message_id)
         bot.answer_callback_query(call.id, "Avval sharh yozishni boshlang")
@@ -1724,6 +1767,7 @@ def cb_review(call: types.CallbackQuery) -> None:
         state["step"] = "ask"
         state["text"] = ""
         state.pop("preview_msg_id", None)
+        db.set_review_state(chat_id, state)
         bot.answer_callback_query(call.id)
         bot.send_message(chat_id, t(chat_id, "review_ask"), parse_mode="HTML")
         return
@@ -1731,7 +1775,7 @@ def cb_review(call: types.CallbackQuery) -> None:
     if action == "cancel":
         clear_message_buttons(chat_id, call.message.message_id)
         clear_message_buttons(chat_id, state.get("invite_msg_id"))
-        REVIEW_STATE.pop(chat_id, None)
+        db.clear_review_state(chat_id)
         bot.answer_callback_query(call.id)
         bot.send_message(chat_id, t(chat_id, "review_cancelled"), parse_mode="HTML")
         return
@@ -1745,19 +1789,19 @@ def cb_review(call: types.CallbackQuery) -> None:
         if not tx:
             clear_message_buttons(chat_id, call.message.message_id)
             clear_message_buttons(chat_id, state.get("invite_msg_id"))
-            REVIEW_STATE.pop(chat_id, None)
+            db.clear_review_state(chat_id)
             bot.answer_callback_query(call.id, "Tranzaksiya topilmadi", show_alert=True)
             return
         if db.get_review_by_tx(tx["tx_id"]):
             clear_message_buttons(chat_id, call.message.message_id)
             clear_message_buttons(chat_id, state.get("invite_msg_id"))
-            REVIEW_STATE.pop(chat_id, None)
+            db.clear_review_state(chat_id)
             bot.answer_callback_query(call.id, t(chat_id, "review_exists"), show_alert=True)
             return
         publish_review_to_channel(chat_id, tx, text)
         clear_message_buttons(chat_id, call.message.message_id)
         clear_message_buttons(chat_id, state.get("invite_msg_id"))
-        REVIEW_STATE.pop(chat_id, None)
+        db.clear_review_state(chat_id)
         bot.answer_callback_query(call.id, "✅")
         bot.send_message(chat_id, t(chat_id, "review_sent"), parse_mode="HTML")
         return
@@ -1766,8 +1810,8 @@ def cb_review(call: types.CallbackQuery) -> None:
 
 
 @bot.message_handler(
-    func=lambda m: REVIEW_STATE.get(m.chat.id, {}).get("step") == "ask"
-    and not PENDING_STEPS.get(m.chat.id)
+    func=lambda m: db.get_review_state(m.chat.id).get("step") == "ask"
+    and not db.get_reg_step(m.chat.id)
     and bool((m.text or "").strip())
     and not (m.text or "").startswith("/")
 )
@@ -1779,10 +1823,10 @@ def review_text_handler(message: types.Message) -> None:
         return
     if len(text) > 500:
         text = text[:500]
-    state = REVIEW_STATE.get(chat_id) or {}
+    state = db.get_review_state(chat_id) or {}
     state["step"] = "confirm"
     state["text"] = text
-    REVIEW_STATE[chat_id] = state
+    db.set_review_state(chat_id, state)
     preview = bot.send_message(
         chat_id,
         t(chat_id, "review_preview").format(text=text),
@@ -1790,7 +1834,7 @@ def review_text_handler(message: types.Message) -> None:
         reply_markup=review_confirm_keyboard(chat_id),
     )
     state["preview_msg_id"] = preview.message_id
-    REVIEW_STATE[chat_id] = state
+    db.set_review_state(chat_id, state)
 
 
 @app.get("/api/reviews")

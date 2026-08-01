@@ -1,5 +1,6 @@
 """Yuan Go uchun SQLite ma'lumotlar bazasi."""
 
+import json
 import secrets
 import sqlite3
 import threading
@@ -38,6 +39,18 @@ if "is_admin" not in _user_cols:
 _user_cols = {row[1] for row in _conn.execute("PRAGMA table_info(users)").fetchall()}
 if "is_super_admin" not in _user_cols:
     _conn.execute("ALTER TABLE users ADD COLUMN is_super_admin INTEGER NOT NULL DEFAULT 0")
+    _conn.commit()
+_user_cols = {row[1] for row in _conn.execute("PRAGMA table_info(users)").fetchall()}
+if "reg_step" not in _user_cols:
+    _conn.execute(
+        "ALTER TABLE users ADD COLUMN reg_step TEXT NOT NULL DEFAULT ''"
+    )
+    _conn.commit()
+_user_cols = {row[1] for row in _conn.execute("PRAGMA table_info(users)").fetchall()}
+if "review_state" not in _user_cols:
+    _conn.execute(
+        "ALTER TABLE users ADD COLUMN review_state TEXT NOT NULL DEFAULT ''"
+    )
     _conn.commit()
 
 _conn.execute(
@@ -153,6 +166,8 @@ ALLOWED_FIELDS = {
     "registered",
     "is_admin",
     "is_super_admin",
+    "reg_step",
+    "review_state",
 }
 
 
@@ -214,6 +229,74 @@ def update_user(telegram_id: int, **fields) -> None:
             (*data.values(), _now(), telegram_id),
         )
         _conn.commit()
+
+
+def get_reg_step(telegram_id: int) -> str:
+    user = get_user(telegram_id)
+    return str((user or {}).get("reg_step") or "").strip()
+
+
+def set_reg_step(telegram_id: int, step: str) -> None:
+    ensure_user(telegram_id)
+    update_user(telegram_id, reg_step=str(step or ""))
+
+
+def clear_reg_step(telegram_id: int) -> None:
+    set_reg_step(telegram_id, "")
+
+
+def get_review_state(telegram_id: int) -> dict:
+    user = get_user(telegram_id)
+    raw = str((user or {}).get("review_state") or "").strip()
+    if not raw:
+        return {}
+    try:
+        data = json.loads(raw)
+        return data if isinstance(data, dict) else {}
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return {}
+
+
+def set_review_state(telegram_id: int, state: dict | None) -> None:
+    ensure_user(telegram_id)
+    if not state:
+        update_user(telegram_id, review_state="")
+        return
+    update_user(telegram_id, review_state=json.dumps(state, ensure_ascii=False))
+
+
+def clear_review_state(telegram_id: int) -> None:
+    set_review_state(telegram_id, None)
+
+
+_conn.execute(
+    """
+    CREATE TABLE IF NOT EXISTS processed_updates (
+        update_id  INTEGER PRIMARY KEY,
+        created_at TEXT    NOT NULL
+    )
+    """
+)
+_conn.commit()
+
+
+def claim_telegram_update(update_id: int) -> bool:
+    """Bir xil Telegram update ikki marta ishlanmasin. True = yangi."""
+    try:
+        with _lock:
+            _conn.execute(
+                "INSERT INTO processed_updates (update_id, created_at) VALUES (?, ?)",
+                (int(update_id), _now()),
+            )
+            # eski yozuvlarni tozalash (24 soatdan eski)
+            cutoff = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S")
+            _conn.execute(
+                "DELETE FROM processed_updates WHERE created_at < ?", (cutoff,)
+            )
+            _conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
 
 
 def all_users() -> list[dict]:
