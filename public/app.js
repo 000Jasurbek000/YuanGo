@@ -267,7 +267,12 @@ function renderPaymentCards() {
       const selected = String(card.id) === String(state.selectedCard);
       const brandClass =
         card.brand === "humo" ? "pay-card-humo" : card.brand === "visa" ? "pay-card-visa" : "pay-card-uzcard";
-      const canCopy = card.can_copy !== false;
+      const digits = String(card.number || "").replace(/\D/g, "");
+      const canCopy = digits.length >= 12;
+      const displayNumber =
+        digits.length >= 12
+          ? `${digits.slice(0, 4)} ${digits.slice(4, 8)} ${digits.slice(8, 12)} ${digits.slice(12)}`.trim()
+          : card.masked || card.number || "";
       return `
         <div class="pay-card ${brandClass} ${selected ? "selected" : ""}" data-card="${card.id}" role="button" tabindex="0" aria-pressed="${selected}">
           <div class="pay-card-top">
@@ -279,7 +284,7 @@ function renderPaymentCards() {
             <span class="contactless" aria-hidden="true">)))</span>
           </div>
           <p class="pay-card-title-line">${escapeHtml(card.title || "")}</p>
-          <p class="pay-card-number">${escapeHtml(card.masked || "")}</p>
+          <p class="pay-card-number">${escapeHtml(displayNumber)}</p>
           <div class="pay-card-bottom">
             <div>
               <small>KARTA EGASI</small>
@@ -289,7 +294,7 @@ function renderPaymentCards() {
               <small>AMAL QILISH</small>
               <strong>**/**</strong>
             </div>
-            <button class="pay-card-copy" type="button" data-copy-card="${card.id}" ${canCopy ? "" : "disabled"}>
+            <button class="pay-card-copy" type="button" data-copy="${canCopy ? digits : ""}" ${canCopy ? "" : "disabled"}>
               <span class="pay-card-copy-ico" aria-hidden="true">⧉</span>
               <span class="pay-card-copy-label">${t("card.copy")}</span>
             </button>
@@ -297,16 +302,6 @@ function renderPaymentCards() {
         </div>`;
     })
     .join("");
-}
-
-async function fetchCardNumber(cardId) {
-  const headers = apiHeaders(false);
-  const res = await fetch(`/api/cards/${cardId}/number`, { headers });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok || !data.ok || !data.number) {
-    throw new Error(data.error || "copy failed");
-  }
-  return String(data.number).replace(/\D/g, "");
 }
 
 function updateBuyCalc() {
@@ -1665,28 +1660,26 @@ function bindUi() {
     if (copyBtn) {
       e.preventDefault();
       e.stopPropagation();
-      if (copyBtn.disabled || copyBtn.classList.contains("is-loading")) return;
-      const cardId = copyBtn.dataset.copyCard;
-      const label = copyBtn.querySelector(".pay-card-copy-label");
-      copyBtn.classList.add("is-loading");
-      try {
-        const digits = await fetchCardNumber(cardId);
-        const ok = await copyText(digits);
-        if (!ok) throw new Error("clipboard");
-        copyBtn.classList.add("is-copied");
-        if (label) label.textContent = t("card.copied");
-        toast(t("card.copied"));
-        haptic("success");
-        setTimeout(() => {
-          copyBtn.classList.remove("is-copied");
-          if (label) label.textContent = t("card.copy");
-        }, 1600);
-      } catch (_) {
+      const digits = copyBtn.dataset.copy || "";
+      if (!digits || copyBtn.disabled) {
+        toast(t("card.copyFail"));
+        return;
+      }
+      const ok = await copyText(digits);
+      if (!ok) {
         toast(t("card.copyFail"));
         haptic("medium");
-      } finally {
-        copyBtn.classList.remove("is-loading");
+        return;
       }
+      copyBtn.classList.add("is-copied");
+      const label = copyBtn.querySelector(".pay-card-copy-label");
+      if (label) label.textContent = t("card.copied");
+      toast(t("card.copied"));
+      haptic("success");
+      setTimeout(() => {
+        copyBtn.classList.remove("is-copied");
+        if (label) label.textContent = t("card.copy");
+      }, 1600);
       return;
     }
     const card = e.target.closest(".pay-card");

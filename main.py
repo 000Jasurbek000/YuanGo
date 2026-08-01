@@ -991,10 +991,9 @@ def serve_upload(filename: str):
 @app.post("/api/upload")
 def api_upload():
     """Chek/QR rasmini alohida yuklash (katta JSON muammosini oldini olish)."""
-    verified = _verified_telegram_user()
-    if not verified:
-        return jsonify(ok=False, error="auth required"), 401
-    tg_id = int(verified["id"])
+    tg_id = _request_tg_id()
+    if not tg_id:
+        return jsonify(ok=False, error="tg_id required"), 400
 
     file = request.files.get("file")
     if not file or not file.filename:
@@ -1026,10 +1025,15 @@ def api_tx_create():
         print(f"[api/tx] JSON parse xatosi, content-length={request.content_length}")
         return jsonify(ok=False, error="invalid json — upload images separately"), 400
 
-    verified = _verified_telegram_user()
-    if not verified:
-        return jsonify(ok=False, error="auth required"), 401
-    tg_id = int(verified["id"])
+    tg_id = _request_tg_id()
+    if not tg_id:
+        # JSON ichidagi tg_id (initData bo'lmasa)
+        try:
+            tg_id = int(data.get("tg_id") or 0) or None
+        except (TypeError, ValueError):
+            tg_id = None
+    if not tg_id:
+        return jsonify(ok=False, error="tg_id required"), 400
     tx_id = data.get("tx_id")
     if not tx_id:
         return jsonify(ok=False, error="tx_id required"), 400
@@ -1237,18 +1241,37 @@ def _verified_telegram_user() -> dict | None:
     return verify_telegram_init_data(_request_init_data())
 
 
-def _admin_user() -> dict | None:
-    """Faqat haqiqiy Telegram WebApp initData bilan (tg_id soxtalashtirib bo'lmaydi)."""
+def _request_tg_id() -> int | None:
+    """Avval imzolangan initData, bo'lmasa ?tg_id / form / JSON (Mini App qulayligi uchun)."""
     tg_user = _verified_telegram_user()
-    if not tg_user:
-        return None
+    if tg_user:
+        try:
+            return int(tg_user.get("id") or 0) or None
+        except (TypeError, ValueError):
+            pass
+    tg_id = request.args.get("tg_id", type=int)
+    if tg_id:
+        return tg_id
+    form_id = request.form.get("tg_id")
+    if form_id:
+        try:
+            return int(form_id) or None
+        except (TypeError, ValueError):
+            pass
+    data = request.get_json(silent=True) or {}
     try:
-        tg_id = int(tg_user.get("id") or 0)
+        return int(data.get("tg_id") or 0) or None
     except (TypeError, ValueError):
         return None
+
+
+def _admin_user() -> dict | None:
+    """Admin paneli: initData yoki bot ochgan ?tg_id."""
+    tg_id = _request_tg_id()
     if not tg_id:
         return None
-    username = str(tg_user.get("username") or "")
+    tg_user = _verified_telegram_user()
+    username = str((tg_user or {}).get("username") or "")
     db.ensure_user(tg_id, username)
     sync_owner(tg_id)
     user = db.get_user(tg_id)
@@ -1682,8 +1705,7 @@ def api_admin_cards_delete(card_id: int):
 
 @app.get("/api/cards")
 def api_public_cards():
-    """Mini App uchun faol kartalar (ro'yxatda to'liq raqam yo'q)."""
-    verified = bool(_verified_telegram_user())
+    """Mini App uchun faol kartalar (to'liq raqam + maska — nusxa olish uchun)."""
     cards = []
     for c in db.list_cards(active_only=True):
         digits = re.sub(r"\D", "", c["number"])
@@ -1698,25 +1720,11 @@ def api_public_cards():
                 "brand": c["brand"],
                 "title": c["title"],
                 "owner_name": c["owner_name"],
+                "number": c["number"],
                 "masked": masked,
-                "can_copy": verified and len(digits) >= 12,
             }
         )
-    return jsonify(ok=True, cards=cards, authenticated=verified)
-
-
-@app.get("/api/cards/<int:card_id>/number")
-def api_card_number(card_id: int):
-    """Nusxa olish uchun to'liq raqam — faqat Telegram WebApp imzosi bilan."""
-    if not _verified_telegram_user():
-        return jsonify(ok=False, error="auth required"), 401
-    card = db.get_card(card_id)
-    if not card or not card.get("active"):
-        return jsonify(ok=False, error="not found"), 404
-    digits = re.sub(r"\D", "", str(card.get("number") or ""))
-    if len(digits) < 12:
-        return jsonify(ok=False, error="invalid card"), 400
-    return jsonify(ok=True, number=digits)
+    return jsonify(ok=True, cards=cards)
 
 
 @app.get("/api/config")
