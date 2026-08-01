@@ -270,9 +270,8 @@ function renderPaymentCards() {
       const digits = String(card.number || "").replace(/\D/g, "");
       const canCopy = digits.length >= 12;
       const displayNumber =
-        digits.length >= 12
-          ? `${digits.slice(0, 4)} ${digits.slice(4, 8)} ${digits.slice(8, 12)} ${digits.slice(12)}`.trim()
-          : card.masked || card.number || "";
+        card.masked ||
+        (digits.length >= 8 ? `${digits.slice(0, 4)} **** **** ${digits.slice(-4)}` : card.number || "");
       return `
         <div class="pay-card ${brandClass} ${selected ? "selected" : ""}" data-card="${card.id}" role="button" tabindex="0" aria-pressed="${selected}">
           <div class="pay-card-top">
