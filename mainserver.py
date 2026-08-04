@@ -1481,6 +1481,7 @@ def api_admin_users():
                 "phone": u.get("phone", ""),
                 "lang": u.get("lang", "uz"),
                 "registered": bool(u.get("registered")),
+                "reg_step": str(u.get("reg_step") or "").strip(),
                 "is_admin": bool(u.get("is_admin")),
                 "is_super_admin": bool(u.get("is_super_admin")),
                 "created_at": u.get("created_at", ""),

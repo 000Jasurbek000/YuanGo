@@ -19,6 +19,7 @@ const PAGE_TITLES = {
   dashboard: "Dashboard",
   transactions: "Tranzaksiyalar",
   users: "Foydalanuvchilar",
+  allUsers: "Jami foydalanuvchilar",
   admins: "Adminlar",
   reviews: "Sharhlar",
   cards: "Karta va hisoblar",
@@ -28,8 +29,17 @@ const PAGE_TITLES = {
   stats: "Statistika",
 };
 
+const REG_STAGE_LABELS = {
+  start: "Start",
+  fio: "FIO",
+  tel: "Tel",
+  registered: "Ro'yxat",
+};
+
 let currentStatus = "progress";
 let allTxStatus = "";
+let allUsersStage = "";
+let allUsersCache = [];
 let currentTx = null;
 let cancelMode = false;
 let approveMode = false;
@@ -105,6 +115,7 @@ function setPage(page) {
   document.getElementById("pageTitle").textContent = PAGE_TITLES[page] || page;
   closeSidebar();
   if (page === "users") loadUsers();
+  if (page === "allUsers") loadAllUsers();
   if (page === "admins") loadAdmins();
   if (page === "reviews") loadReviews();
   if (page === "transactions") loadAllTxTable();
@@ -222,6 +233,102 @@ async function loadUsers() {
     .join("");
 }
 
+function hasUserName(u) {
+  return !!(String(u.first_name || "").trim() || String(u.last_name || "").trim());
+}
+
+function hasUserPhone(u) {
+  return !!String(u.phone || "").trim();
+}
+
+function userRegStage(u) {
+  if (u.registered) return "registered";
+  if (hasUserPhone(u)) return "tel";
+  const step = String(u.reg_step || "").trim();
+  // FIO kiritilgan yoki FIO/telefon bosqichida
+  if (
+    hasUserName(u) ||
+    step === "name" ||
+    step === "edit_name" ||
+    step === "phone" ||
+    step === "edit_phone"
+  ) {
+    return "fio";
+  }
+  return "start";
+}
+
+function matchesUserStage(u, stage) {
+  if (!stage) return true;
+  if (stage === "tel") return hasUserPhone(u);
+  if (stage === "registered") return !!u.registered;
+  if (stage === "fio") {
+    if (u.registered || hasUserPhone(u)) return false;
+    return userRegStage(u) === "fio";
+  }
+  if (stage === "start") return userRegStage(u) === "start";
+  return userRegStage(u) === stage;
+}
+
+function renderAllUsersTable() {
+  const tbody = document.getElementById("allUsersTableBody");
+  if (!tbody) return;
+  const list = allUsersCache.filter((u) => matchesUserStage(u, allUsersStage));
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#64748b">Foydalanuvchilar yo'q</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list
+    .map((u) => {
+      const name = `${u.first_name || ""} ${u.last_name || ""}`.trim() || "—";
+      const role = u.is_super_admin ? "👑" : u.is_admin ? "🛡" : "—";
+      const stage = userRegStage(u);
+      const stageBadge =
+        stage === "registered"
+          ? `<span class="badge badge-done">${REG_STAGE_LABELS[stage]}</span>`
+          : stage === "tel"
+            ? `<span class="badge badge-progress">${REG_STAGE_LABELS[stage]}</span>`
+            : stage === "fio"
+              ? `<span class="badge badge-progress">${REG_STAGE_LABELS[stage]}</span>`
+              : `<span class="badge badge-cancelled">${REG_STAGE_LABELS[stage]}</span>`;
+      return `
+        <tr>
+          <td><b>#${u.unique_id || "—"}</b></td>
+          <td>${name}</td>
+          <td>${u.username ? "@" + u.username : "—"}</td>
+          <td>${u.phone || "—"}</td>
+          <td>${(u.lang || "uz").toUpperCase()}</td>
+          <td>${stageBadge}</td>
+          <td>${u.updated_at || u.created_at || "—"}</td>
+          <td>${role}</td>
+        </tr>`;
+    })
+    .join("");
+}
+
+async function loadAllUsers() {
+  const data = await api("/api/admin/users");
+  if (!data.ok) return;
+  allUsersCache = data.users || [];
+  let start = 0;
+  let fio = 0;
+  let tel = 0;
+  let registered = 0;
+  for (const u of allUsersCache) {
+    if (u.registered) registered += 1;
+    if (hasUserPhone(u)) tel += 1;
+    const stage = userRegStage(u);
+    if (stage === "start") start += 1;
+    else if (stage === "fio") fio += 1;
+  }
+  document.getElementById("allStatRegistered").textContent = registered;
+  document.getElementById("allStatStart").textContent = start;
+  document.getElementById("allStatFio").textContent = fio;
+  document.getElementById("allStatTel").textContent = tel;
+  document.getElementById("allStatTotal").textContent = allUsersCache.length;
+  renderAllUsersTable();
+}
+
 async function loadAdmins() {
   const data = await api("/api/admin/operators");
   if (!data.ok) return;
@@ -302,6 +409,7 @@ async function refresh() {
     const active = document.querySelector(".page.is-active")?.dataset.pageView;
     if (active === "transactions") await loadAllTxTable();
     if (active === "users") await loadUsers();
+    if (active === "allUsers") await loadAllUsers();
   } finally {
     refreshing = false;
   }
@@ -755,6 +863,10 @@ async function init() {
   bindFilters("txFilters", (status) => {
     allTxStatus = status;
     loadAllTxTable();
+  });
+  bindFilters("allUsersFilters", (status) => {
+    allUsersStage = status || "";
+    renderAllUsersTable();
   });
 
   bindTable("txTableBody");

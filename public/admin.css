@@ -224,6 +224,10 @@ button, textarea, input { font: inherit; }
   margin-bottom: 18px;
 }
 
+.stats-grid-5 {
+  grid-template-columns: repeat(5, 1fr);
+}
+
 .stat-card {
   background: var(--card);
   border: 1px solid var(--line);
@@ -756,6 +760,7 @@ button, textarea, input { font: inherit; }
 
 @media (max-width: 980px) {
   .stats-grid { grid-template-columns: 1fr 1fr; }
+  .stats-grid-5 { grid-template-columns: 1fr 1fr; }
   .admin-shell { grid-template-columns: 1fr; }
   .sidebar {
     position: fixed;
