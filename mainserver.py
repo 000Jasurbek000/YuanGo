@@ -382,6 +382,12 @@ def cmd_start(message: types.Message) -> None:
         send_start_menu(chat_id)
         return
 
+    # Yangi foydalanuvchi — darhol 5 CNY bonus xabari
+    bot.send_message(
+        chat_id,
+        t(chat_id, "promo_welcome_new"),
+        parse_mode="HTML",
+    )
     continue_registration(chat_id)
 
 
@@ -1629,6 +1635,159 @@ def broadcast_settings_change(old: dict, new: dict) -> None:
     print(f"Settings broadcast: sent={sent}, failed={failed}")
 
 
+def _broadcast_image_path(image_url: str) -> Path | None:
+    url = str(image_url or "").strip()
+    if not url:
+        return None
+    if url.startswith("/uploads/"):
+        path = UPLOADS_DIR / url.removeprefix("/uploads/")
+        return path if path.is_file() else None
+    path = Path(url)
+    if path.is_file() and UPLOADS_DIR in path.resolve().parents:
+        return path
+    return None
+
+
+def send_broadcast_to_all(text: str, image_url: str = "") -> tuple[int, int]:
+    """Barcha foydalanuvchilarga matn/rasm yuboradi. (sent, failed)"""
+    import time
+
+    body = str(text or "").strip()
+    photo_path = _broadcast_image_path(image_url)
+    if not body and not photo_path:
+        return 0, 0
+
+    sent = 0
+    failed = 0
+    for user in db.all_users():
+        chat_id = int(user["telegram_id"])
+        try:
+            if photo_path:
+                caption = body[:1024] if body else None
+                with open(photo_path, "rb") as photo:
+                    try:
+                        bot.send_photo(
+                            chat_id,
+                            photo,
+                            caption=caption,
+                            parse_mode="HTML" if caption else None,
+                        )
+                    except Exception:
+                        photo.seek(0)
+                        bot.send_photo(chat_id, photo, caption=caption)
+                if body and len(body) > 1024:
+                    try:
+                        bot.send_message(chat_id, body, parse_mode="HTML")
+                    except Exception:
+                        bot.send_message(chat_id, body)
+            else:
+                try:
+                    bot.send_message(chat_id, body, parse_mode="HTML")
+                except Exception:
+                    bot.send_message(chat_id, body)
+            sent += 1
+            time.sleep(0.04)
+        except Exception as exc:
+            failed += 1
+            print(f"Broadcast xato ({chat_id}): {exc}")
+    return sent, failed
+
+
+def process_broadcast_item(item: dict) -> None:
+    sent, failed = send_broadcast_to_all(
+        item.get("text") or "",
+        item.get("image_url") or "",
+    )
+    db.mark_broadcast_sent(int(item["id"]), sent, failed)
+    print(
+        f"Broadcast #{item['id']}: sent={sent}, failed={failed},"
+        f" mode={item.get('mode')}"
+    )
+
+
+def run_due_broadcasts() -> None:
+    try:
+        due = db.claim_due_broadcasts()
+        for item in due:
+            try:
+                process_broadcast_item(item)
+            except Exception as exc:
+                print(f"Broadcast ishlash xato #{item.get('id')}: {exc}")
+    except Exception as exc:
+        print(f"Broadcast scheduler xato: {exc}")
+
+
+def start_broadcast_loop() -> None:
+    def loop():
+        threading.Event().wait(5)
+        while True:
+            run_due_broadcasts()
+            threading.Event().wait(60)
+
+    threading.Thread(target=loop, daemon=True).start()
+
+
+@app.get("/api/admin/broadcasts")
+def api_admin_broadcasts_list():
+    if not _check_super_admin():
+        return jsonify(ok=False, error="forbidden"), 403
+    return jsonify(ok=True, broadcasts=db.list_broadcasts())
+
+
+@app.post("/api/admin/broadcasts")
+def api_admin_broadcasts_create():
+    admin_id = _check_super_admin()
+    if not admin_id:
+        return jsonify(ok=False, error="forbidden"), 403
+    data = request.get_json(silent=True) or {}
+    text = str(data.get("text") or "").strip()
+    image_url = str(data.get("image_url") or "").strip()
+    mode = str(data.get("mode") or "once").strip().lower()
+    try:
+        interval_hours = int(data.get("interval_hours") or 0)
+    except (TypeError, ValueError):
+        interval_hours = 0
+
+    if not text and not image_url:
+        return jsonify(ok=False, error="text or image required"), 400
+    if mode not in ("once", "interval"):
+        return jsonify(ok=False, error="mode invalid"), 400
+    if mode == "interval" and not (1 <= interval_hours <= 720):
+        return jsonify(ok=False, error="interval_hours must be 1–720"), 400
+    if image_url and not _broadcast_image_path(image_url):
+        return jsonify(ok=False, error="image not found"), 400
+
+    item = db.create_broadcast(
+        text=text,
+        image_url=image_url,
+        mode=mode,
+        interval_hours=interval_hours,
+        created_by=admin_id,
+        send_now=True,
+    )
+    threading.Thread(target=run_due_broadcasts, daemon=True).start()
+    return jsonify(ok=True, broadcast=item)
+
+
+@app.post("/api/admin/broadcasts/<int:broadcast_id>/stop")
+def api_admin_broadcasts_stop(broadcast_id: int):
+    if not _check_super_admin():
+        return jsonify(ok=False, error="forbidden"), 403
+    item = db.stop_broadcast(broadcast_id)
+    if not item:
+        return jsonify(ok=False, error="not found"), 404
+    return jsonify(ok=True, broadcast=item)
+
+
+@app.delete("/api/admin/broadcasts/<int:broadcast_id>")
+def api_admin_broadcasts_delete(broadcast_id: int):
+    if not _check_super_admin():
+        return jsonify(ok=False, error="forbidden"), 403
+    if not db.delete_broadcast(broadcast_id):
+        return jsonify(ok=False, error="not found"), 404
+    return jsonify(ok=True)
+
+
 @app.get("/api/admin/cards")
 def api_admin_cards():
     if not _check_super_admin():
@@ -2185,6 +2344,7 @@ def start_bot_once() -> None:
 
 db.ensure_rate_history_seeded()
 start_storage_cleanup_loop()
+start_broadcast_loop()
 start_bot_once()
 
 if __name__ == "__main__":

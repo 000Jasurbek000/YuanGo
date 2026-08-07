@@ -599,6 +599,32 @@ button, textarea, input { font: inherit; }
   background: #f8fafc;
 }
 
+.form-panel label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.form-panel textarea,
+.form-panel input:not([type="file"]),
+.form-panel select {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  color: var(--text);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-panel textarea {
+  resize: vertical;
+  min-height: 110px;
+  font: inherit;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

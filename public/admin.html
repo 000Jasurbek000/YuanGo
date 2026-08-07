@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Yuan Go — Admin Panel</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="/admin.css?v=14" />
+    <link rel="stylesheet" href="/admin.css?v=15" />
   </head>
   <body>
     <div id="deniedView" class="denied-screen" hidden>
@@ -416,14 +416,63 @@
 
           <section class="page" data-page-view="messages">
             <div class="panel">
-              <div class="panel-head"><h2>Xabarlar</h2></div>
+              <div class="panel-head"><h2>Xabar yuborish</h2></div>
               <div class="form-panel" style="display:block">
-                <p style="margin:0 0 12px;color:#64748b;font-size:14px">
-                  Ommaviy xabar hozircha o‘chirilgan. Foydalanuvchiga individual xabar tranzaksiya tafsilotidan emas, Telegram orqali yuboriladi.
+                <p class="hint" style="margin:0 0 14px;padding:0">
+                  Barcha bot foydalanuvchilariga aksiya yoki e’lon yuboring. Matn, rasm yoki ikkalasi.
                 </p>
-                <label>Operator username
-                  <input type="text" value="@YuanGoSupport" disabled />
+                <label>Xabar matni
+                  <textarea id="broadcastText" rows="5" maxlength="3500" placeholder="Masalan: 🎁 Birinchi xarid uchun 5 CNY BONUS!"></textarea>
                 </label>
+                <div style="margin:14px 0">
+                  <span style="display:block;font-size:13px;color:#64748b;margin-bottom:8px">Rasm (ixtiyoriy)</span>
+                  <button id="broadcastPickImg" class="upload-box" type="button" style="min-height:120px;width:100%">
+                    <img id="broadcastImgPreview" alt="Rasm" hidden />
+                    <span id="broadcastImgPlaceholder">📷 Rasm qo‘shish</span>
+                  </button>
+                  <input id="broadcastImgInput" type="file" accept="image/*" hidden />
+                  <button id="broadcastClearImg" class="btn btn-ghost" type="button" style="width:auto;margin-top:8px;padding:6px 12px" hidden>Rasmni olib tashlash</button>
+                </div>
+                <div class="form-grid" style="margin-top:8px">
+                  <label>Yuborish turi
+                    <select id="broadcastMode">
+                      <option value="once">Bir martalik</option>
+                      <option value="interval">Avto (har N soat)</option>
+                    </select>
+                  </label>
+                  <label id="broadcastHoursWrap" hidden>Har necha soatda?
+                    <input id="broadcastHours" type="number" min="1" max="720" value="12" placeholder="Masalan: 12" />
+                  </label>
+                </div>
+                <p id="broadcastModeHint" class="hint" style="margin:8px 0 14px;padding:0">
+                  Bir marta barcha foydalanuvchilarga yuboriladi.
+                </p>
+                <div class="form-actions">
+                  <button id="broadcastSendBtn" class="btn btn-approve" type="button">Yuborish</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel" style="margin-top:16px">
+              <div class="panel-head">
+                <h2>Yuborilgan / rejalashtirilgan</h2>
+                <button id="refreshBroadcastsBtn" class="btn btn-ghost" type="button" style="width:auto;padding:8px 12px">Yangilash</button>
+              </div>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Matn</th>
+                      <th>Rasm</th>
+                      <th>Turi</th>
+                      <th>Holat</th>
+                      <th>Oxirgi</th>
+                      <th>Amallar</th>
+                    </tr>
+                  </thead>
+                  <tbody id="broadcastsTableBody"></tbody>
+                </table>
               </div>
             </div>
           </section>
@@ -527,6 +576,6 @@
 
     <div id="toast" class="toast" hidden></div>
 
-    <script src="/admin.js?v=18"></script>
+    <script src="/admin.js?v=19"></script>
   </body>
 </html>

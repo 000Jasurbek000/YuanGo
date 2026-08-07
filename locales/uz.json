@@ -13,6 +13,7 @@
   "phone_invalid": "⚠️ Telefon raqami noto'g'ri. Masalan: +998901234567",
   "registered": "🎉 Ro'yxatdan muvaffaqiyatli o'tdingiz, <b>{name}</b>!\n\n🆔 Sizning ID: <code>{uid}</code>\n\n💚 <b>Yuan Go</b> — yuan sotib olish mini ilovasi.\nKerakli bo'limni pastdagi tugmalardan tanlang. 👇",
   "welcome_back": "👋 Salom, <b>{name}</b>!\n\n💚 <b>Yuan Go</b> — yuan sotib olish mini ilovasi.\nKerakli bo'limni pastdagi tugmalardan tanlang. 👇",
+  "promo_welcome_new": "🎁 <b>Xush kelibsiz!</b>\n\nSiz yangi foydalanuvchisiz.\nBirinchi muvaffaqiyatli xaridingiz uchun <b>5 CNY</b> bonus sizni kutmoqda.",
   "need_register": "⚠️ Bu bo'lim faqat ro'yxatdan o'tgan foydalanuvchilar uchun.\n\nRo'yxatdan o'tish uchun /start ni bosing.",
   "history_title": "🕓 <b>O'tkazmalar tarixi</b>",
   "history_empty": "Sizda hali o'tkazmalar yo'q.",

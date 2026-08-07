@@ -13,6 +13,7 @@
   "phone_invalid": "⚠️ Invalid phone number. For example: +998901234567",
   "registered": "🎉 You are registered, <b>{name}</b>!\n\n🆔 Your ID: <code>{uid}</code>\n\n💚 <b>Yuan Go</b> — a mini app for buying yuan.\nChoose a section using the buttons below. 👇",
   "welcome_back": "👋 Hello, <b>{name}</b>!\n\n💚 <b>Yuan Go</b> — a mini app for buying yuan.\nChoose a section using the buttons below. 👇",
+  "promo_welcome_new": "🎁 <b>Welcome!</b>\n\nYou are a new user.\nA <b>5 CNY</b> bonus is waiting for your first successful purchase.",
   "need_register": "⚠️ This section is available to registered users only.\n\nPress /start to register.",
   "history_title": "🕓 <b>Transaction history</b>",
   "history_empty": "You have no transactions yet.",

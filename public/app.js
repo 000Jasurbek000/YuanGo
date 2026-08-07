@@ -10,7 +10,11 @@ let publicReviews = [];
 let reviewCarouselIndex = 0;
 let reviewCarouselTimer = null;
 const STORAGE_KEY = "yuan_exchange_v8";
+const PROMO_WELCOME_KEY = "yuan_promo_welcome_seen";
+const PROMO_MIN_CNY = 50;
+const PROMO_BONUS_CNY = 5;
 const DEMO_TX_IDS = [];
+let promoDetailsReturnTo = "home";
 
 const I18N = { uz: {}, ru: {}, en: {} };
 
@@ -18,7 +22,7 @@ async function loadI18n() {
   const langs = ["uz", "ru", "en"];
   await Promise.all(
     langs.map(async (lang) => {
-      const res = await fetch(`/i18n/${lang}.json?v=2`, {
+      const res = await fetch(`/i18n/${lang}.json?v=3`, {
         headers: { "ngrok-skip-browser-warning": "true" },
       });
       if (!res.ok) throw new Error(`i18n ${lang}: ${res.status}`);
@@ -206,6 +210,14 @@ function applyI18n() {
 }
 
 function go(screen) {
+  const prev = document.querySelector(".screen.active")?.dataset.screen;
+  if (prev === "promo-welcome" && screen !== "promo-welcome") {
+    markPromoWelcomeSeen();
+  }
+  if (screen === "promo-details") {
+    if (prev && prev !== "promo-details") promoDetailsReturnTo = prev;
+  }
+
   document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
   const target = document.querySelector(`[data-screen="${screen}"]`);
   if (target) target.classList.add("active");
@@ -230,11 +242,42 @@ function go(screen) {
   if (screen === "buy") {
     updateBuyCalc();
     renderPaymentCards();
+    updatePromoUi();
   }
   if (screen === "profile") renderProfile();
   if (screen === "stats") renderStats();
   if (screen === "settings") renderSettings();
   window.scrollTo(0, 0);
+}
+
+function isFirstPurchaseEligible() {
+  return !state.transactions.some((x) => x.status === "done");
+}
+
+function markPromoWelcomeSeen() {
+  try {
+    localStorage.setItem(PROMO_WELCOME_KEY, "1");
+  } catch (_) {}
+}
+
+function shouldShowPromoWelcome() {
+  try {
+    return !localStorage.getItem(PROMO_WELCOME_KEY);
+  } catch (_) {
+    return true;
+  }
+}
+
+function updatePromoUi() {
+  const eligible = isFirstPurchaseEligible();
+  const banner = document.getElementById("homePromoBanner");
+  if (banner) banner.hidden = !eligible;
+
+  const notice = document.getElementById("buyPromoNotice");
+  if (notice) {
+    const amount = Number(document.getElementById("cnyAmount")?.value) || 0;
+    notice.hidden = !(eligible && amount >= PROMO_MIN_CNY);
+  }
 }
 
 function cardLabel(key) {
@@ -311,6 +354,7 @@ function updateBuyCalc() {
   document.getElementById("buyRate").textContent = `${formatNumber(RATE)} UZS`;
   const feeEl = document.getElementById("buyCommission");
   if (feeEl) feeEl.textContent = COMMISSION;
+  updatePromoUi();
 }
 
 function amountInvalidText() {
@@ -467,6 +511,7 @@ function renderHome() {
     publicPurchaseList().slice(0, 5)
   );
   renderNotificationBadge();
+  updatePromoUi();
 }
 
 function renderAllPurchases() {
@@ -1564,6 +1609,15 @@ function bindUi() {
     el.addEventListener("click", () => go(el.dataset.go));
   });
 
+  document.getElementById("promoWelcomeContinue")?.addEventListener("click", () => {
+    markPromoWelcomeSeen();
+    go("home");
+  });
+
+  document.getElementById("promoDetailsBack")?.addEventListener("click", () => {
+    go(promoDetailsReturnTo === "promo-welcome" ? "promo-welcome" : "home");
+  });
+
   document.getElementById("ratePeriods")?.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-rate-days]");
     if (!btn) return;
@@ -2001,7 +2055,14 @@ async function bootApp() {
 
   const START_SCREENS = ["home", "buy", "transactions", "rate-stats", "qrs", "profile", "purchases"];
   const requestedScreen = new URLSearchParams(location.search).get("screen");
-  go(START_SCREENS.includes(requestedScreen) ? requestedScreen : "home");
+  if (START_SCREENS.includes(requestedScreen)) {
+    markPromoWelcomeSeen();
+    go(requestedScreen);
+  } else if (shouldShowPromoWelcome()) {
+    go("promo-welcome");
+  } else {
+    go("home");
+  }
 }
 
 bootApp();

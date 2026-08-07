@@ -121,6 +121,7 @@ function setPage(page) {
   if (page === "transactions") loadAllTxTable();
   if (page === "cards") loadCards();
   if (page === "settings") loadSettings();
+  if (page === "messages") loadBroadcasts();
   if (page === "stats") loadStats();
 }
 
@@ -634,6 +635,132 @@ async function doCancel() {
   }
 }
 
+let broadcastImageUrl = null;
+
+function resetBroadcastForm() {
+  const text = document.getElementById("broadcastText");
+  if (text) text.value = "";
+  broadcastImageUrl = null;
+  const preview = document.getElementById("broadcastImgPreview");
+  const placeholder = document.getElementById("broadcastImgPlaceholder");
+  const clearBtn = document.getElementById("broadcastClearImg");
+  const input = document.getElementById("broadcastImgInput");
+  if (preview) {
+    preview.src = "";
+    preview.hidden = true;
+  }
+  if (placeholder) placeholder.hidden = false;
+  if (clearBtn) clearBtn.hidden = true;
+  if (input) input.value = "";
+}
+
+function syncBroadcastModeUi() {
+  const mode = document.getElementById("broadcastMode")?.value || "once";
+  const hoursWrap = document.getElementById("broadcastHoursWrap");
+  const hint = document.getElementById("broadcastModeHint");
+  if (hoursWrap) hoursWrap.hidden = mode !== "interval";
+  if (hint) {
+    hint.textContent =
+      mode === "interval"
+        ? "Hozir yuboriladi, keyin belgilangan soat oralig‘ida avtomatik takrorlanadi."
+        : "Bir marta barcha foydalanuvchilarga yuboriladi.";
+  }
+}
+
+async function loadBroadcasts() {
+  syncBroadcastModeUi();
+  const data = await api("/api/admin/broadcasts");
+  if (!data.ok) return;
+  const tbody = document.getElementById("broadcastsTableBody");
+  if (!tbody) return;
+  const list = data.broadcasts || [];
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#64748b">Hali xabar yo‘q</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list
+    .map((b) => {
+      const preview = (b.text || "").replace(/\s+/g, " ").trim();
+      const short = preview.length > 60 ? preview.slice(0, 60) + "…" : preview || "—";
+      const modeLabel =
+        b.mode === "interval"
+          ? `Avto · har ${b.interval_hours || "?"} soat`
+          : "Bir martalik";
+      let status;
+      if (b.mode === "interval" && Number(b.active) === 1) {
+        status = `<span class="badge badge-progress">Faol</span>`;
+      } else if (b.mode === "interval") {
+        status = `<span class="badge badge-cancelled">To‘xtatilgan</span>`;
+      } else {
+        status = `<span class="badge badge-done">Yuborilgan</span>`;
+      }
+      const last = b.last_sent_at
+        ? `${b.last_sent_at}<br><small>✓${b.last_sent || 0} · ✕${b.last_failed || 0}</small>`
+        : "—";
+      const actions = [];
+      if (b.mode === "interval" && Number(b.active) === 1) {
+        actions.push(
+          `<button class="act-btn no" type="button" data-broadcast-stop="${b.id}" title="To‘xtatish">⏹</button>`
+        );
+      }
+      actions.push(
+        `<button class="act-btn no" type="button" data-broadcast-del="${b.id}" title="O‘chirish">✕</button>`
+      );
+      return `
+        <tr>
+          <td><b>#${b.id}</b></td>
+          <td title="${preview.replace(/"/g, "&quot;")}">${short}</td>
+          <td>${b.image_url ? "🖼" : "—"}</td>
+          <td>${modeLabel}</td>
+          <td>${status}</td>
+          <td>${last}</td>
+          <td><div class="row-actions">${actions.join("")}</div></td>
+        </tr>`;
+    })
+    .join("");
+}
+
+async function sendBroadcast() {
+  const text = document.getElementById("broadcastText")?.value.trim() || "";
+  const mode = document.getElementById("broadcastMode")?.value || "once";
+  const hours = Number(document.getElementById("broadcastHours")?.value || 0);
+  if (!text && !broadcastImageUrl) {
+    toast("Matn yoki rasm kiriting");
+    return;
+  }
+  if (mode === "interval" && (!Number.isFinite(hours) || hours < 1 || hours > 720)) {
+    toast("Soat 1 dan 720 gacha bo‘lishi kerak");
+    return;
+  }
+  showPreloader("Xabar yuborilmoqda…");
+  try {
+    const data = await api("/api/admin/broadcasts", {
+      method: "POST",
+      body: JSON.stringify({
+        text,
+        image_url: broadcastImageUrl || "",
+        mode,
+        interval_hours: mode === "interval" ? hours : 0,
+      }),
+    });
+    if (data.ok) {
+      toast(
+        mode === "interval"
+          ? "Avto xabar yoqildi — hozir yuborilmoqda"
+          : "Xabar yuborilmoqda"
+      );
+      resetBroadcastForm();
+      await loadBroadcasts();
+    } else {
+      toast(data.error || "Xatolik");
+    }
+  } catch (_) {
+    toast("Xatolik yuz berdi");
+  } finally {
+    hidePreloader();
+  }
+}
+
 function bindFilters(containerId, onChange) {
   document.getElementById(containerId)?.addEventListener("click", (e) => {
     const pill = e.target.closest(".pill");
@@ -1066,6 +1193,84 @@ async function init() {
       toast("Xatolik");
     } finally {
       hidePreloader();
+    }
+  });
+
+  document.getElementById("broadcastMode")?.addEventListener("change", syncBroadcastModeUi);
+  document.getElementById("broadcastPickImg")?.addEventListener("click", () => {
+    document.getElementById("broadcastImgInput")?.click();
+  });
+  document.getElementById("broadcastImgInput")?.addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    showPreloader("Rasm yuklanmoqda…");
+    try {
+      broadcastImageUrl = await uploadAdminReceipt(file);
+      const preview = document.getElementById("broadcastImgPreview");
+      if (preview) {
+        preview.src = broadcastImageUrl;
+        preview.hidden = false;
+      }
+      const placeholder = document.getElementById("broadcastImgPlaceholder");
+      if (placeholder) placeholder.hidden = true;
+      const clearBtn = document.getElementById("broadcastClearImg");
+      if (clearBtn) clearBtn.hidden = false;
+      toast("Rasm yuklandi");
+    } catch (_) {
+      broadcastImageUrl = null;
+      toast("Rasm yuklanmadi");
+    } finally {
+      hidePreloader();
+    }
+  });
+  document.getElementById("broadcastClearImg")?.addEventListener("click", () => {
+    broadcastImageUrl = null;
+    const preview = document.getElementById("broadcastImgPreview");
+    const placeholder = document.getElementById("broadcastImgPlaceholder");
+    const clearBtn = document.getElementById("broadcastClearImg");
+    const input = document.getElementById("broadcastImgInput");
+    if (preview) {
+      preview.src = "";
+      preview.hidden = true;
+    }
+    if (placeholder) placeholder.hidden = false;
+    if (clearBtn) clearBtn.hidden = true;
+    if (input) input.value = "";
+  });
+  document.getElementById("broadcastSendBtn")?.addEventListener("click", sendBroadcast);
+  document.getElementById("refreshBroadcastsBtn")?.addEventListener("click", loadBroadcasts);
+  document.getElementById("broadcastsTableBody")?.addEventListener("click", async (e) => {
+    const stopBtn = e.target.closest("[data-broadcast-stop]");
+    const delBtn = e.target.closest("[data-broadcast-del]");
+    if (stopBtn) {
+      showPreloader("To‘xtatilmoqda…");
+      try {
+        await api(`/api/admin/broadcasts/${stopBtn.dataset.broadcastStop}/stop`, {
+          method: "POST",
+          body: "{}",
+        });
+        toast("Avto yuborish to‘xtatildi");
+        await loadBroadcasts();
+      } catch (_) {
+        toast("Xatolik");
+      } finally {
+        hidePreloader();
+      }
+    }
+    if (delBtn) {
+      if (!confirm("Bu xabarni o‘chirasizmi?")) return;
+      showPreloader("O‘chirilmoqda…");
+      try {
+        await api(`/api/admin/broadcasts/${delBtn.dataset.broadcastDel}`, {
+          method: "DELETE",
+        });
+        toast("O‘chirildi");
+        await loadBroadcasts();
+      } catch (_) {
+        toast("Xatolik");
+      } finally {
+        hidePreloader();
+      }
     }
   });
 

@@ -781,3 +781,147 @@ def stats_detailed() -> dict:
         "recent_users": [dict(r) for r in recent_users],
         "recent_txs": recent_txs,
     }
+
+
+# ---------------------------------------------------------------- Broadcasts (ommaviy xabar)
+
+_conn.execute(
+    """
+    CREATE TABLE IF NOT EXISTS broadcasts (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        text            TEXT    NOT NULL DEFAULT '',
+        image_url       TEXT    NOT NULL DEFAULT '',
+        mode            TEXT    NOT NULL DEFAULT 'once',
+        interval_hours  INTEGER NOT NULL DEFAULT 0,
+        active          INTEGER NOT NULL DEFAULT 1,
+        last_sent_at    TEXT    NOT NULL DEFAULT '',
+        next_send_at    TEXT    NOT NULL DEFAULT '',
+        send_count      INTEGER NOT NULL DEFAULT 0,
+        last_sent       INTEGER NOT NULL DEFAULT 0,
+        last_failed     INTEGER NOT NULL DEFAULT 0,
+        created_by      INTEGER NOT NULL DEFAULT 0,
+        created_at      TEXT    NOT NULL
+    )
+    """
+)
+_conn.commit()
+
+
+def create_broadcast(
+    *,
+    text: str,
+    image_url: str = "",
+    mode: str = "once",
+    interval_hours: int = 0,
+    created_by: int = 0,
+    send_now: bool = True,
+) -> dict:
+    """mode: once | interval. send_now=True bo'lsa next_send_at=hozir."""
+    now = _now()
+    mode = "interval" if mode == "interval" else "once"
+    hours = max(1, int(interval_hours or 0)) if mode == "interval" else 0
+    next_at = now if send_now else (
+        (datetime.now() + timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
+        if mode == "interval"
+        else now
+    )
+    with _lock:
+        cur = _conn.execute(
+            "INSERT INTO broadcasts"
+            " (text, image_url, mode, interval_hours, active, next_send_at, created_by, created_at)"
+            " VALUES (?, ?, ?, ?, 1, ?, ?, ?)",
+            (
+                str(text or "").strip(),
+                str(image_url or "").strip(),
+                mode,
+                hours,
+                next_at,
+                int(created_by or 0),
+                now,
+            ),
+        )
+        _conn.commit()
+        bid = cur.lastrowid
+    return get_broadcast(bid)
+
+
+def get_broadcast(broadcast_id: int) -> dict | None:
+    row = _conn.execute(
+        "SELECT * FROM broadcasts WHERE id = ?", (int(broadcast_id),)
+    ).fetchone()
+    return dict(row) if row else None
+
+
+def list_broadcasts(limit: int = 50) -> list[dict]:
+    rows = _conn.execute(
+        "SELECT * FROM broadcasts ORDER BY created_at DESC LIMIT ?",
+        (max(1, min(int(limit), 200)),),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def stop_broadcast(broadcast_id: int) -> dict | None:
+    with _lock:
+        _conn.execute(
+            "UPDATE broadcasts SET active = 0, next_send_at = '' WHERE id = ?",
+            (int(broadcast_id),),
+        )
+        _conn.commit()
+    return get_broadcast(broadcast_id)
+
+
+def delete_broadcast(broadcast_id: int) -> bool:
+    with _lock:
+        cur = _conn.execute(
+            "DELETE FROM broadcasts WHERE id = ?", (int(broadcast_id),)
+        )
+        _conn.commit()
+        return cur.rowcount > 0
+
+
+def claim_due_broadcasts() -> list[dict]:
+    """Yuborish vaqti kelgan aktiv broadcastlarni oladi (atomic next_send_at yangilanadi)."""
+    now = _now()
+    claimed: list[dict] = []
+    with _lock:
+        rows = _conn.execute(
+            "SELECT * FROM broadcasts"
+            " WHERE active = 1 AND next_send_at != '' AND next_send_at <= ?"
+            " ORDER BY next_send_at ASC LIMIT 20",
+            (now,),
+        ).fetchall()
+        for row in rows:
+            item = dict(row)
+            bid = int(item["id"])
+            mode = item.get("mode") or "once"
+            hours = int(item.get("interval_hours") or 0)
+            if mode == "interval" and hours > 0:
+                next_at = (datetime.now() + timedelta(hours=hours)).strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
+                active = 1
+            else:
+                next_at = ""
+                active = 0
+            cur = _conn.execute(
+                "UPDATE broadcasts SET next_send_at = ?, active = ?"
+                " WHERE id = ? AND active = 1 AND next_send_at = ?",
+                (next_at, active, bid, item.get("next_send_at") or ""),
+            )
+            if cur.rowcount:
+                item["next_send_at"] = next_at
+                item["active"] = active
+                claimed.append(item)
+        _conn.commit()
+    return claimed
+
+
+def mark_broadcast_sent(broadcast_id: int, sent: int, failed: int) -> None:
+    now = _now()
+    with _lock:
+        _conn.execute(
+            "UPDATE broadcasts SET last_sent_at = ?, last_sent = ?, last_failed = ?,"
+            " send_count = send_count + 1 WHERE id = ?",
+            (now, int(sent), int(failed), int(broadcast_id)),
+        )
+        _conn.commit()

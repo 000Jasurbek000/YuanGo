@@ -8,7 +8,7 @@
     />
     <title>Yuan Go</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="/styles.css?v=9" />
+    <link rel="stylesheet" href="/styles.css?v=10" />
   </head>
   <body>
     <div id="app" class="app">
@@ -44,6 +44,16 @@
               <h2 id="homeUserName">—</h2>
             </div>
           </div>
+
+          <button class="promo-banner" id="homePromoBanner" data-go="promo-details" type="button" hidden>
+            <span class="promo-banner-ico" aria-hidden="true">🎁</span>
+            <span class="promo-banner-copy">
+              <strong data-i18n="promo.badge">AKSIYA!</strong>
+              <span data-i18n="promo.bannerSub">Birinchi xaridingiz uchun</span>
+              <span class="promo-highlight" data-i18n="promo.bannerBonus">5 CNY BONUS</span>
+            </span>
+            <span class="promo-banner-arrow" aria-hidden="true">›</span>
+          </button>
 
           <button class="rate-hero" data-go="rate-stats" type="button" aria-label="Kurs statistikasini ochish">
             <span class="rate-map" aria-hidden="true"></span>
@@ -162,6 +172,64 @@
         </div>
       </section>
 
+      <!-- PROMO WELCOME (first open) -->
+      <section class="screen" data-screen="promo-welcome">
+        <div class="promo-welcome">
+          <div class="promo-welcome-brand">
+            <span class="promo-welcome-mark">¥</span>
+            <strong>Yuan <b>Go</b></strong>
+          </div>
+          <div class="promo-welcome-hero">
+            <div class="promo-welcome-copy">
+              <p class="promo-welcome-eyebrow" data-i18n="promo.welcomeEyebrow">BIRINCHI XARIDINGIZ UCHUN</p>
+              <h1 data-i18n="promo.welcomeTitle">5 CNY BONUS!</h1>
+              <ul class="promo-welcome-points">
+                <li data-i18n="promo.pointSafe">Xavfsiz almashuv</li>
+                <li data-i18n="promo.pointFast">Tez tasdiqlash</li>
+                <li data-i18n="promo.pointSupport">24/7 qo‘llab-quvvatlash</li>
+              </ul>
+            </div>
+            <div class="promo-welcome-visual" aria-hidden="true">
+              <span class="promo-gift-big">🎁</span>
+              <span class="promo-coin">5 CNY</span>
+            </div>
+          </div>
+          <p class="promo-welcome-cta-text" data-i18n="promo.welcomeCta">Yuan Go bilan oson va ishonchli!</p>
+          <button class="btn primary lg" id="promoWelcomeContinue" type="button" data-i18n="promo.welcomeBtn">Davom etish</button>
+          <button class="link-btn promo-welcome-terms" data-go="promo-details" type="button" data-i18n="promo.seeTerms">Aksiya tafsilotlari ›</button>
+        </div>
+      </section>
+
+      <!-- PROMO DETAILS -->
+      <section class="screen" data-screen="promo-details">
+        <header class="topbar">
+          <button class="icon-btn back" id="promoDetailsBack" type="button">‹</button>
+          <h1 data-i18n="promo.detailsTitle">Aksiya tafsilotlari</h1>
+          <span class="topbar-spacer"></span>
+        </header>
+        <div class="content">
+          <div class="promo-details-hero">
+            <span class="promo-gift-mid" aria-hidden="true">🎁</span>
+            <h2>
+              <span data-i18n="promo.detailsFor">Birinchi xaridingiz uchun</span>
+              <strong data-i18n="promo.detailsBonus">5 CNY BONUS!</strong>
+            </h2>
+          </div>
+          <p class="hint-text" style="margin-top:14px" data-i18n="promo.detailsIntro">Yuan Go‘ga yangi foydalanuvchilar uchun maxsus aksiya!</p>
+          <ul class="promo-terms">
+            <li data-i18n="promo.term1">Bonus faqat birinchi muvaffaqiyatli operatsiya uchun beriladi.</li>
+            <li data-i18n="promo.term2">Minimal xarid miqdori: 50 CNY</li>
+            <li data-i18n="promo.term3">Buyurtma tasdiqlangandan so‘ng bonus avtomatik qo‘shiladi.</li>
+            <li data-i18n="promo.term4">Bonus boshqa aksiyalar bilan birlashtirilmaydi.</li>
+          </ul>
+          <div class="promo-deadline">
+            <span aria-hidden="true">⏱</span>
+            <p data-i18n="promo.deadline">Aksiya cheklangan muddat uchun amal qiladi. Shoshiling! 🎉</p>
+          </div>
+          <button class="btn primary lg" data-go="buy" type="button" data-i18n="promo.goBuy">Yuan sotib olish</button>
+        </div>
+      </section>
+
       <!-- RATE STATISTICS -->
       <section class="screen" data-screen="rate-stats">
         <header class="topbar">
@@ -234,6 +302,15 @@
             <div class="row"><span data-i18n="buy.rate">Kurs</span><strong id="buyRate">1,840 UZS</strong></div>
             <div class="row"><span data-i18n="buy.fee">Komissiya</span><strong class="ok" id="buyCommission">0%</strong></div>
             <div class="row total"><span data-i18n="buy.pay">To‘lov</span><strong id="uzsTotal">540,000 UZS</strong></div>
+          </div>
+
+          <div class="buy-promo-notice" id="buyPromoNotice" hidden>
+            <span class="buy-promo-ico" aria-hidden="true">🎁</span>
+            <p>
+              <span data-i18n="promo.buyBefore">Ushbu buyurtma tasdiqlangandan so‘ng</span>
+              <strong data-i18n="promo.buyBonus">siz 5 CNY BONUS</strong>
+              <span data-i18n="promo.buyAfter">olasiz!</span>
+            </p>
           </div>
 
           <h2 class="section-title" data-i18n="buy.pickCard">Kartani tanlang</h2>
@@ -845,6 +922,6 @@
         </button>
       </nav>
     </div>
-    <script src="/app.js?v=21"></script>
+    <script src="/app.js?v=22"></script>
   </body>
 </html>
