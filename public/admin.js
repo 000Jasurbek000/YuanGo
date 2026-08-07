@@ -40,6 +40,9 @@ let currentStatus = "progress";
 let allTxStatus = "";
 let allUsersStage = "";
 let allUsersCache = [];
+let usersCache = [];
+let usersActivityFilter = "";
+let allUsersActivityFilter = "";
 let currentTx = null;
 let cancelMode = false;
 let approveMode = false;
@@ -210,24 +213,107 @@ async function loadAllTxTable() {
 async function loadUsers() {
   const data = await api("/api/admin/users");
   if (!data.ok) return;
+  usersCache = data.users || [];
+  updateActivityCounts(
+    usersCache,
+    {
+      all: "actCountAll",
+      d3: "actCount3",
+      d7: "actCount7",
+      d30: "actCount30",
+      idle: "actCountIdle",
+    }
+  );
+  renderUsersTable();
+}
+
+function daysSinceSeen(u) {
+  const raw = String(u.last_seen_at || u.updated_at || u.created_at || "").trim();
+  if (!raw) return Infinity;
+  const ts = Date.parse(raw.replace(" ", "T"));
+  if (!Number.isFinite(ts)) return Infinity;
+  return (Date.now() - ts) / (1000 * 60 * 60 * 24);
+}
+
+/** Faollik guruhi: d3 (<=3), d7 (3–7], d30 (7–30], idle (>30) */
+function userActivityBucket(u) {
+  const days = daysSinceSeen(u);
+  if (days <= 3) return "d3";
+  if (days <= 7) return "d7";
+  if (days <= 30) return "d30";
+  return "idle";
+}
+
+function matchesActivityFilter(u, filter) {
+  if (!filter) return true;
+  const days = daysSinceSeen(u);
+  if (filter === "d3") return days <= 3;
+  if (filter === "d7") return days <= 7;
+  if (filter === "d30") return days <= 30;
+  if (filter === "idle") return days > 30;
+  return true;
+}
+
+function activityCounts(list) {
+  let d3 = 0;
+  let d7 = 0;
+  let d30 = 0;
+  let idle = 0;
+  for (const u of list) {
+    const days = daysSinceSeen(u);
+    if (days <= 3) d3 += 1;
+    if (days <= 7) d7 += 1;
+    if (days <= 30) d30 += 1;
+    if (days > 30) idle += 1;
+  }
+  return { all: list.length, d3, d7, d30, idle };
+}
+
+function updateActivityCounts(list, ids) {
+  const c = activityCounts(list);
+  const map = [
+    [ids.all, c.all],
+    [ids.d3, c.d3],
+    [ids.d7, c.d7],
+    [ids.d30, c.d30],
+    [ids.idle, c.idle],
+  ];
+  for (const [id, val] of map) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  }
+}
+
+function formatSeenCell(u) {
+  const bucket = userActivityBucket(u);
+  const when = u.last_seen_at || u.updated_at || u.created_at || "—";
+  const labels = { d3: "3+", d7: "7+", d30: "30+", idle: "Uyqu" };
+  return `<span class="seen-badge ${bucket}" title="${when}">${labels[bucket]} · ${when}</span>`;
+}
+
+function renderUsersTable() {
   const tbody = document.getElementById("usersTableBody");
-  if (!data.users?.length) {
+  if (!tbody) return;
+  const list = usersCache.filter((u) => matchesActivityFilter(u, usersActivityFilter));
+  if (!list.length) {
     tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#64748b">Foydalanuvchilar yo'q</td></tr>`;
     return;
   }
-  tbody.innerHTML = data.users
+  tbody.innerHTML = list
     .map((u) => {
       const name = `${u.first_name || ""} ${u.last_name || ""}`.trim() || "—";
       const role = u.is_super_admin ? "👑" : u.is_admin ? "🛡" : "—";
+      const bucket = userActivityBucket(u);
+      const regAt = u.registered_at || (u.registered ? u.created_at : "—") || "—";
       return `
-        <tr>
+        <tr class="row-act-${bucket}">
           <td><b>#${u.unique_id || "—"}</b></td>
           <td>${name}</td>
           <td>${u.username ? "@" + u.username : "—"}</td>
           <td>${u.phone || "—"}</td>
           <td>${(u.lang || "uz").toUpperCase()}</td>
-          <td>${u.registered ? "✓" : "—"}</td>
-          <td>${u.updated_at || u.created_at || "—"}</td>
+          <td>${regAt}</td>
+          <td>${formatSeenCell(u)}</td>
           <td>${role}</td>
         </tr>`;
     })
@@ -246,7 +332,6 @@ function userRegStage(u) {
   if (u.registered) return "registered";
   if (hasUserPhone(u)) return "tel";
   const step = String(u.reg_step || "").trim();
-  // FIO kiritilgan yoki FIO/telefon bosqichida
   if (
     hasUserName(u) ||
     step === "name" ||
@@ -274,9 +359,11 @@ function matchesUserStage(u, stage) {
 function renderAllUsersTable() {
   const tbody = document.getElementById("allUsersTableBody");
   if (!tbody) return;
-  const list = allUsersCache.filter((u) => matchesUserStage(u, allUsersStage));
+  const list = allUsersCache.filter(
+    (u) => matchesUserStage(u, allUsersStage) && matchesActivityFilter(u, allUsersActivityFilter)
+  );
   if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#64748b">Foydalanuvchilar yo'q</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#64748b">Foydalanuvchilar yo'q</td></tr>`;
     return;
   }
   tbody.innerHTML = list
@@ -284,6 +371,8 @@ function renderAllUsersTable() {
       const name = `${u.first_name || ""} ${u.last_name || ""}`.trim() || "—";
       const role = u.is_super_admin ? "👑" : u.is_admin ? "🛡" : "—";
       const stage = userRegStage(u);
+      const bucket = userActivityBucket(u);
+      const regAt = u.registered_at || (u.registered ? u.created_at : "—") || "—";
       const stageBadge =
         stage === "registered"
           ? `<span class="badge badge-done">${REG_STAGE_LABELS[stage]}</span>`
@@ -293,14 +382,15 @@ function renderAllUsersTable() {
               ? `<span class="badge badge-progress">${REG_STAGE_LABELS[stage]}</span>`
               : `<span class="badge badge-cancelled">${REG_STAGE_LABELS[stage]}</span>`;
       return `
-        <tr>
+        <tr class="row-act-${bucket}">
           <td><b>#${u.unique_id || "—"}</b></td>
           <td>${name}</td>
           <td>${u.username ? "@" + u.username : "—"}</td>
           <td>${u.phone || "—"}</td>
           <td>${(u.lang || "uz").toUpperCase()}</td>
           <td>${stageBadge}</td>
-          <td>${u.updated_at || u.created_at || "—"}</td>
+          <td>${regAt}</td>
+          <td>${formatSeenCell(u)}</td>
           <td>${role}</td>
         </tr>`;
     })
@@ -327,7 +417,29 @@ async function loadAllUsers() {
   document.getElementById("allStatFio").textContent = fio;
   document.getElementById("allStatTel").textContent = tel;
   document.getElementById("allStatTotal").textContent = allUsersCache.length;
+  updateActivityCounts(
+    allUsersCache,
+    {
+      all: "allActCountAll",
+      d3: "allActCount3",
+      d7: "allActCount7",
+      d30: "allActCount30",
+      idle: "allActCountIdle",
+    }
+  );
   renderAllUsersTable();
+}
+
+function bindActivityLegend(containerId, onChange) {
+  document.getElementById(containerId)?.addEventListener("click", (e) => {
+    const chip = e.target.closest("[data-activity]");
+    if (!chip) return;
+    document
+      .querySelectorAll(`#${containerId} .activity-chip`)
+      .forEach((c) => c.classList.remove("is-active"));
+    chip.classList.add("is-active");
+    onChange(chip.dataset.activity || "");
+  });
 }
 
 async function loadAdmins() {
@@ -993,6 +1105,14 @@ async function init() {
   });
   bindFilters("allUsersFilters", (status) => {
     allUsersStage = status || "";
+    renderAllUsersTable();
+  });
+  bindActivityLegend("usersActivityLegend", (activity) => {
+    usersActivityFilter = activity || "";
+    renderUsersTable();
+  });
+  bindActivityLegend("allUsersActivityLegend", (activity) => {
+    allUsersActivityFilter = activity || "";
     renderAllUsersTable();
   });
 

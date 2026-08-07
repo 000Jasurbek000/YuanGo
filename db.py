@@ -52,6 +52,30 @@ if "review_state" not in _user_cols:
         "ALTER TABLE users ADD COLUMN review_state TEXT NOT NULL DEFAULT ''"
     )
     _conn.commit()
+_user_cols = {row[1] for row in _conn.execute("PRAGMA table_info(users)").fetchall()}
+if "registered_at" not in _user_cols:
+    _conn.execute(
+        "ALTER TABLE users ADD COLUMN registered_at TEXT NOT NULL DEFAULT ''"
+    )
+    _conn.commit()
+    # Eski ro'yxatdan o'tganlarga created_at ni yozib qo'yamiz
+    _conn.execute(
+        "UPDATE users SET registered_at = created_at"
+        " WHERE registered = 1 AND (registered_at IS NULL OR registered_at = '')"
+    )
+    _conn.commit()
+_user_cols = {row[1] for row in _conn.execute("PRAGMA table_info(users)").fetchall()}
+if "last_seen_at" not in _user_cols:
+    _conn.execute(
+        "ALTER TABLE users ADD COLUMN last_seen_at TEXT NOT NULL DEFAULT ''"
+    )
+    _conn.commit()
+    # Eski yozuvlar uchun eng yaqin faollik sifatida updated_at
+    _conn.execute(
+        "UPDATE users SET last_seen_at = COALESCE(NULLIF(updated_at, ''), created_at)"
+        " WHERE last_seen_at IS NULL OR last_seen_at = ''"
+    )
+    _conn.commit()
 
 _conn.execute(
     """
@@ -168,6 +192,8 @@ ALLOWED_FIELDS = {
     "is_super_admin",
     "reg_step",
     "review_state",
+    "registered_at",
+    "last_seen_at",
 }
 
 
@@ -186,29 +212,64 @@ def _generate_unique_id() -> str:
             return uid
 
 
-def ensure_user(telegram_id: int, username: str = "") -> dict:
+def ensure_user(telegram_id: int, username: str = "", *, touch_seen: bool = False) -> dict:
     """Foydalanuvchini qaytaradi, bo'lmasa yaratadi."""
     with _lock:
         row = _conn.execute(
             "SELECT * FROM users WHERE telegram_id = ?", (telegram_id,)
         ).fetchone()
+        now = _now()
         if row:
-            _conn.execute(
-                "UPDATE users SET username = COALESCE(NULLIF(?, ''), username), updated_at = ?"
-                " WHERE telegram_id = ?",
-                (username or "", _now(), telegram_id),
-            )
+            if touch_seen:
+                _conn.execute(
+                    "UPDATE users SET username = COALESCE(NULLIF(?, ''), username),"
+                    " updated_at = ?, last_seen_at = ? WHERE telegram_id = ?",
+                    (username or "", now, now, telegram_id),
+                )
+            else:
+                _conn.execute(
+                    "UPDATE users SET username = COALESCE(NULLIF(?, ''), username), updated_at = ?"
+                    " WHERE telegram_id = ?",
+                    (username or "", now, telegram_id),
+                )
             _conn.commit()
             return get_user(telegram_id)
 
-        now = _now()
         _conn.execute(
-            "INSERT INTO users (telegram_id, unique_id, username, created_at, updated_at)"
-            " VALUES (?, ?, ?, ?, ?)",
-            (telegram_id, _generate_unique_id(), username or "", now, now),
+            "INSERT INTO users"
+            " (telegram_id, unique_id, username, created_at, updated_at, last_seen_at)"
+            " VALUES (?, ?, ?, ?, ?, ?)",
+            (telegram_id, _generate_unique_id(), username or "", now, now, now),
         )
         _conn.commit()
     return get_user(telegram_id)
+
+
+def touch_last_seen(telegram_id: int) -> None:
+    """Foydalanuvchi bot/ilovadan foydalanganda chaqiriladi."""
+    now = _now()
+    with _lock:
+        row = _conn.execute(
+            "SELECT telegram_id FROM users WHERE telegram_id = ?", (telegram_id,)
+        ).fetchone()
+        if not row:
+            return
+        _conn.execute(
+            "UPDATE users SET last_seen_at = ?, updated_at = ? WHERE telegram_id = ?",
+            (now, now, telegram_id),
+        )
+        _conn.commit()
+
+
+def mark_registered(telegram_id: int, **fields) -> None:
+    """Ro'yxatni yakunlash — registered_at birinchi marta yoziladi."""
+    user = get_user(telegram_id)
+    data = dict(fields)
+    data["registered"] = 1
+    if user and not str(user.get("registered_at") or "").strip():
+        data["registered_at"] = _now()
+    update_user(telegram_id, **data)
+    touch_last_seen(telegram_id)
 
 
 def get_user(telegram_id: int) -> dict | None:
@@ -254,6 +315,7 @@ def reset_registration(telegram_id: int) -> None:
         last_name="",
         phone="",
         registered=0,
+        registered_at="",
         reg_step="",
     )
     clear_review_state(telegram_id)

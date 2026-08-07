@@ -362,7 +362,7 @@ def cmd_reregister(message: types.Message) -> None:
 def cmd_start(message: types.Message) -> None:
     chat_id = message.chat.id
     username = message.from_user.username if message.from_user else ""
-    db.ensure_user(chat_id, username or "")
+    db.ensure_user(chat_id, username or "", touch_seen=True)
     sync_owner(chat_id)
 
     if not WEBAPP_READY:
@@ -478,7 +478,11 @@ def finish_registration(chat_id, phone: str) -> None:
         phone = "+" + re.sub(r"\D", "", phone)
 
     editing = db.get_reg_step(chat_id) == "edit_phone" and is_registered(chat_id)
-    db.update_user(chat_id, phone=phone, registered=1)
+    if editing:
+        db.update_user(chat_id, phone=phone)
+        db.touch_last_seen(chat_id)
+    else:
+        db.mark_registered(chat_id, phone=phone)
     db.clear_reg_step(chat_id)
     sync_owner(chat_id)
 
@@ -810,6 +814,7 @@ def api_me():
     if not user or not user.get("registered"):
         return jsonify(ok=True, registered=False)
 
+    db.touch_last_seen(tg_id)
     return jsonify(
         ok=True,
         registered=True,
@@ -831,7 +836,7 @@ def api_me_update():
         return jsonify(ok=False, error="tg_id required"), 400
 
     tg_id = int(tg_id)
-    db.ensure_user(tg_id)
+    db.ensure_user(tg_id, touch_seen=True)
     fields = {
         key: str(data[key]).strip()
         for key in ("first_name", "last_name", "phone", "lang")
@@ -1043,6 +1048,7 @@ def api_tx_create():
             tg_id = None
     if not tg_id:
         return jsonify(ok=False, error="tg_id required"), 400
+    db.touch_last_seen(tg_id)
     tx_id = data.get("tx_id")
     if not tx_id:
         return jsonify(ok=False, error="tx_id required"), 400
@@ -1491,6 +1497,8 @@ def api_admin_users():
                 "is_admin": bool(u.get("is_admin")),
                 "is_super_admin": bool(u.get("is_super_admin")),
                 "created_at": u.get("created_at", ""),
+                "registered_at": u.get("registered_at", "") or "",
+                "last_seen_at": u.get("last_seen_at", "") or "",
                 "updated_at": u.get("updated_at", ""),
             }
         )

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Yuan Go — Admin Panel</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="/admin.css?v=15" />
+    <link rel="stylesheet" href="/admin.css?v=16" />
   </head>
   <body>
     <div id="deniedView" class="denied-screen" hidden>
@@ -180,6 +180,29 @@
 
           <!-- USERS -->
           <section class="page" data-page-view="users">
+            <div class="activity-legend" id="usersActivityLegend">
+              <button class="activity-chip is-active" type="button" data-activity="">
+                <i class="dot gray"></i> Barchasi <b id="actCountAll">0</b>
+              </button>
+              <button class="activity-chip" type="button" data-activity="d3">
+                <i class="dot green"></i> 3+ kun <b id="actCount3">0</b>
+              </button>
+              <button class="activity-chip" type="button" data-activity="d7">
+                <i class="dot blue"></i> 7+ kun <b id="actCount7">0</b>
+              </button>
+              <button class="activity-chip" type="button" data-activity="d30">
+                <i class="dot orange"></i> 30+ kun <b id="actCount30">0</b>
+              </button>
+              <button class="activity-chip" type="button" data-activity="idle">
+                <i class="dot red"></i> Uyquda <b id="actCountIdle">0</b>
+              </button>
+            </div>
+            <p class="activity-hint">
+              <span class="dot green"></span> 3 kun ichida kirgan ·
+              <span class="dot blue"></span> 7 kun ·
+              <span class="dot orange"></span> 30 kun ·
+              <span class="dot red"></span> 30+ kun kirilmagan (doimiy = 7+ kun)
+            </p>
             <div class="panel">
               <div class="panel-head"><h2>Foydalanuvchilar</h2></div>
               <div class="table-wrap">
@@ -191,7 +214,7 @@
                       <th>Telegram</th>
                       <th>Telefon</th>
                       <th>Til</th>
-                      <th>Ro'yxat</th>
+                      <th>Ro'yxat vaqti</th>
                       <th>Oxirgi kirish</th>
                       <th>Admin</th>
                     </tr>
@@ -204,6 +227,29 @@
 
           <!-- ALL USERS (registration funnel) -->
           <section class="page" data-page-view="allUsers">
+            <div class="activity-legend" id="allUsersActivityLegend">
+              <button class="activity-chip is-active" type="button" data-activity="">
+                <i class="dot gray"></i> Barchasi <b id="allActCountAll">0</b>
+              </button>
+              <button class="activity-chip" type="button" data-activity="d3">
+                <i class="dot green"></i> 3+ kun <b id="allActCount3">0</b>
+              </button>
+              <button class="activity-chip" type="button" data-activity="d7">
+                <i class="dot blue"></i> 7+ kun <b id="allActCount7">0</b>
+              </button>
+              <button class="activity-chip" type="button" data-activity="d30">
+                <i class="dot orange"></i> 30+ kun <b id="allActCount30">0</b>
+              </button>
+              <button class="activity-chip" type="button" data-activity="idle">
+                <i class="dot red"></i> Uyquda <b id="allActCountIdle">0</b>
+              </button>
+            </div>
+            <p class="activity-hint">
+              <span class="dot green"></span> 3 kun ichida ·
+              <span class="dot blue"></span> 7 kun ·
+              <span class="dot orange"></span> 30 kun ·
+              <span class="dot red"></span> 30+ kun yo‘q (reklama: 7+ = doimiy)
+            </p>
             <div class="stats-grid stats-grid-5" id="allUsersStats">
               <article class="stat-card">
                 <div class="stat-ico green">✓</div>
@@ -247,6 +293,7 @@
                       <th>Telefon</th>
                       <th>Til</th>
                       <th>Bosqich</th>
+                      <th>Ro'yxat vaqti</th>
                       <th>Oxirgi kirish</th>
                       <th>Admin</th>
                     </tr>
@@ -576,6 +623,6 @@
 
     <div id="toast" class="toast" hidden></div>
 
-    <script src="/admin.js?v=19"></script>
+    <script src="/admin.js?v=20"></script>
   </body>
 </html>
