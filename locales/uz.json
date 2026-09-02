@@ -93,8 +93,8 @@
   "contest_share_text": "💸 Yuan Go konkursida qatnashing va {pool} so‘m yuting!\n\n🏆 Ball yig‘ing, do‘stlaringizni taklif qiling — sovrin sizniki!\n🥇 1-o‘rin: {p1} · 🥈 {p2} · 🥉 {p3} so‘m\n\n⚡️ Hozir boshlang va reytingda yuqoriga chiqing! 🚀\n\n👇 Boshlash uchun bosing:",
   "contest_my_points": "⭐ <b>Mening ballarim</b>\n\n💎 Ballaringiz: <b>{points}</b>\n🏆 Reytingingiz: <b>#{rank}</b>\n👥 Takliflaringiz: <b>{invites}</b>\n\n📋 <b>Shaxsiy progress</b>\n{line_entry}\n{line_reg}\n{line_channel}\n{line_invite}\n\n🎯 Davom eting — TOP 3 ga chiqing!",
   "contest_top_title": "🏆 <b>TOP reyting</b>\n\n{rows}",
-  "contest_top_empty": "Hali ball yo‘q. Birinchi bo‘ling!",
-  "contest_top_row": "{n}. {name} — <b>{points}</b> ball",
+  "contest_top_empty": "📭 Hali ball yo‘q.\nBirinchi bo‘ling va reytingni boshlang! 🚀",
+  "contest_top_row": "{medal}<b>{n}.</b> {name}  ·  <b>{points}</b> ⭐",
   "contest_rules": "📜 <b>Konkurs shartlari</b>\n\n💰 Sovrin jamg‘armasi: <b>{pool} so‘m</b>\n🥇 1-o‘rin: <b>{p1} so‘m</b>\n🥈 2-o‘rin: <b>{p2} so‘m</b>\n🥉 3-o‘rin: <b>{p3} so‘m</b>\n\n⭐ Ball:\n• Taklif havolasi orqali start — <b>+5</b>\n• Kanalga obuna — <b>+10</b>\n• Ro‘yxatdan o‘tish — <b>+10</b>\n• Har bir do‘stdan maks. <b>25</b> ball\n\n⏱ Muddat: <b>{days}</b> kun\n📅 Tugash: <b>{ends}</b>",
   "contest_ref_notify_start": "🎉 Tanishingiz botga kirdi!\n⭐ Sizga <b>+{points}</b> ball\nJami: <b>{total}</b>",
   "contest_ref_notify_channel": "📢 Tanishingiz kanalga obuna bo‘ldi!\n⭐ Sizga <b>+{points}</b> ball\nJami: <b>{total}</b>",
@@ -102,10 +102,10 @@
   "contest_remind_2d": "⏰ <b>Konkurs eslatmasi</b>\n\nTugashiga <b>~2 kun</b> qoldi!\nBallaringizni yig‘ishni davom ettiring 🎯",
   "contest_remind_1d": "⏰ <b>Oxirgi kun!</b>\n\nKonkurs bugun tugaydi. So‘nggi imkoniyatdan foydalaning! 🏆",
   "contest_yuango_hint": "💚 <b>Yuan Go</b> asosiy menyusi. Kerakli bo‘limni tanlang 👇",
-  "contest_top_you": "📍 <b>Sizning o‘rningiz:</b> #{rank} · ⭐ <b>{points}</b> ball",
-  "contest_top_you_none": "📍 <b>Siz hali reytingda emassiz</b> · ⭐ 0 ball",
-  "contest_top_lead": "🏆 Tabriklaymiz — siz <b>1-o‘rindasiz!</b>",
-  "contest_top_gap": "⬆️ {n}-o‘ringa: yana <b>{need}</b> ball",
+  "contest_top_you": "👤 <b>Sizning natijangiz</b>\n🏅 O‘rin: <b>#{rank}</b>\n⭐ Ball: <b>{points}</b>",
+  "contest_top_you_none": "👤 <b>Sizning natijangiz</b>\nHali reytingda emassiz · ⭐ <b>0</b> ball\nBall yig‘ib TOP ga chiqing! 🚀",
+  "contest_top_lead": "🥇 <b>Ajoyib!</b> Siz hozir yetakchidasiz.",
+  "contest_top_gap": "🎯 {n}-o‘rin uchun yana <b>{need}</b> ball",
   "contest_top_done": "✅ {n}-o‘rin — sizdasiz",
-  "contest_top_prev": "🔼 {n}-o‘rin (oldingi): yana <b>{need}</b> ball"
+  "contest_top_prev": "📌 Oldingi o‘rin (#{n}) uchun yana <b>{need}</b> ball"
 }

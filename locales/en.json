@@ -93,8 +93,8 @@
   "contest_share_text": "💸 Join the Yuan Go contest and win {pool} UZS!\n\n🏆 Earn points, invite friends — the prize is yours!\n🥇 1st: {p1} · 🥈 {p2} · 🥉 {p3} UZS\n\n⚡️ Start now and climb the ranking! 🚀\n\n👇 Tap to start:",
   "contest_my_points": "⭐ <b>My points</b>\n\n💎 Your points: <b>{points}</b>\n🏆 Your rank: <b>#{rank}</b>\n👥 Invites: <b>{invites}</b>\n\n📋 <b>Your progress</b>\n{line_entry}\n{line_reg}\n{line_channel}\n{line_invite}\n\n🎯 Keep going — aim for TOP 3!",
   "contest_top_title": "🏆 <b>TOP ranking</b>\n\n{rows}",
-  "contest_top_empty": "No points yet. Be the first!",
-  "contest_top_row": "{n}. {name} — <b>{points}</b>",
+  "contest_top_empty": "📭 No points yet.\nBe the first on the board! 🚀",
+  "contest_top_row": "{medal}<b>{n}.</b> {name}  ·  <b>{points}</b> ⭐",
   "contest_rules": "📜 <b>Contest rules</b>\n\n💰 Prize pool: <b>{pool} UZS</b>\n🥇 1st: <b>{p1} UZS</b>\n🥈 2nd: <b>{p2} UZS</b>\n🥉 3rd: <b>{p3} UZS</b>\n\n⭐ Points:\n• Start via invite — <b>+5</b>\n• Channel subscribe — <b>+10</b>\n• Registration — <b>+10</b>\n• Max <b>25</b> per friend\n\n⏱ Duration: <b>{days}</b> days\n📅 Ends: <b>{ends}</b>",
   "contest_ref_notify_start": "🎉 Your friend started the bot!\n⭐ You got <b>+{points}</b>\nTotal: <b>{total}</b>",
   "contest_ref_notify_channel": "📢 Your friend subscribed!\n⭐ You got <b>+{points}</b>\nTotal: <b>{total}</b>",
@@ -102,10 +102,10 @@
   "contest_remind_2d": "⏰ <b>Reminder</b>\n\nAbout <b>2 days</b> left in the contest!\nKeep earning points 🎯",
   "contest_remind_1d": "⏰ <b>Last day!</b>\n\nThe contest ends today. Final chance! 🏆",
   "contest_yuango_hint": "💚 <b>Yuan Go</b> main menu. Choose a section 👇",
-  "contest_top_you": "📍 <b>Your place:</b> #{rank} · ⭐ <b>{points}</b> points",
-  "contest_top_you_none": "📍 <b>You are not ranked yet</b> · ⭐ 0 points",
-  "contest_top_lead": "🏆 Congrats — you are <b>#1!</b>",
-  "contest_top_gap": "⬆️ To place {n}: <b>{need}</b> more points",
+  "contest_top_you": "👤 <b>Your result</b>\n🏅 Place: <b>#{rank}</b>\n⭐ Points: <b>{points}</b>",
+  "contest_top_you_none": "👤 <b>Your result</b>\nNot ranked yet · ⭐ <b>0</b>\nEarn points and join the TOP! 🚀",
+  "contest_top_lead": "🥇 <b>Awesome!</b> You are currently leading.",
+  "contest_top_gap": "🎯 {need} more points to reach #{n}",
   "contest_top_done": "✅ Place {n} — yours",
-  "contest_top_prev": "🔼 To place {n} (ahead): <b>{need}</b> more points"
+  "contest_top_prev": "📌 {need} more points to reach #{n}"
 }

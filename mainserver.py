@@ -931,6 +931,7 @@ def cmd_contest_top(message: types.Message) -> None:
         )
         return
     lines = []
+    medals = {1: "🥇 ", 2: "🥈 ", 3: "🥉 "}
     for i, row in enumerate(rows, 1):
         name = row.get("display_name") or contest.mask_public_name(
             row.get("first_name"),
@@ -940,12 +941,15 @@ def cmd_contest_top(message: types.Message) -> None:
         )
         lines.append(
             t(chat_id, "contest_top_row").format(
-                n=i, name=name, points=row.get("points") or 0
+                medal=medals.get(i, "▫️ "),
+                n=i,
+                name=name,
+                points=row.get("points") or 0,
             )
         )
 
     prog = contest.ranking_progress(chat_id)
-    footer = ["", "────────────"]
+    footer = ["", "━━━━━━━━━━━━━━━━"]
     if prog["rank"] is None:
         footer.append(t(chat_id, "contest_top_you_none"))
     else:
@@ -957,17 +961,15 @@ def cmd_contest_top(message: types.Message) -> None:
         if prog["rank"] == 1:
             footer.append(t(chat_id, "contest_top_lead"))
 
+    # Faqat hali yetilmagan o‘rinlar — "sizdasiz/OK" chiqarilmaydi
     for item in prog["targets"]:
         if item["done"]:
-            footer.append(
-                t(chat_id, "contest_top_done").format(n=item["place"])
+            continue
+        footer.append(
+            t(chat_id, "contest_top_gap").format(
+                n=item["place"], need=item["need"]
             )
-        else:
-            footer.append(
-                t(chat_id, "contest_top_gap").format(
-                    n=item["place"], need=item["need"]
-                )
-            )
+        )
 
     prev = prog.get("prev")
     if prev and prev["place"] not in (1, 2, 3):

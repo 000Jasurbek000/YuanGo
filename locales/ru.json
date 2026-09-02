@@ -93,8 +93,8 @@
   "contest_share_text": "💸 Участвуйте в конкурсе Yuan Go и выиграйте {pool} сум!\n\n🏆 Набирайте баллы, приглашайте друзей — приз ваш!\n🥇 1 место: {p1} · 🥈 {p2} · 🥉 {p3} сум\n\n⚡️ Начните сейчас и поднимитесь в рейтинге! 🚀\n\n👇 Нажмите, чтобы начать:",
   "contest_my_points": "⭐ <b>Мои баллы</b>\n\n💎 Ваши баллы: <b>{points}</b>\n🏆 Ваше место: <b>#{rank}</b>\n👥 Приглашения: <b>{invites}</b>\n\n📋 <b>Личный прогресс</b>\n{line_entry}\n{line_reg}\n{line_channel}\n{line_invite}\n\n🎯 Продолжайте — цель TOP 3!",
   "contest_top_title": "🏆 <b>ТОП рейтинг</b>\n\n{rows}",
-  "contest_top_empty": "Пока нет баллов. Будьте первым!",
-  "contest_top_row": "{n}. {name} — <b>{points}</b>",
+  "contest_top_empty": "📭 Пока нет баллов.\nСтаньте первым в рейтинге! 🚀",
+  "contest_top_row": "{medal}<b>{n}.</b> {name}  ·  <b>{points}</b> ⭐",
   "contest_rules": "📜 <b>Условия конкурса</b>\n\n💰 Призовой фонд: <b>{pool} сум</b>\n🥇 1 место: <b>{p1} сум</b>\n🥈 2 место: <b>{p2} сум</b>\n🥉 3 место: <b>{p3} сум</b>\n\n⭐ Баллы:\n• Старт по ссылке — <b>+5</b>\n• Подписка на канал — <b>+10</b>\n• Регистрация — <b>+10</b>\n• Макс. <b>25</b> с одного друга\n\n⏱ Срок: <b>{days}</b> дн.\n📅 До: <b>{ends}</b>",
   "contest_ref_notify_start": "🎉 Ваш друг зашёл в бота!\n⭐ Вам <b>+{points}</b>\nИтого: <b>{total}</b>",
   "contest_ref_notify_channel": "📢 Друг подписался на канал!\n⭐ Вам <b>+{points}</b>\nИтого: <b>{total}</b>",
@@ -102,10 +102,10 @@
   "contest_remind_2d": "⏰ <b>Напоминание</b>\n\nДо конца конкурса ~<b>2 дня</b>!\nПродолжайте набирать баллы 🎯",
   "contest_remind_1d": "⏰ <b>Последний день!</b>\n\nКонкурс заканчивается сегодня. Успейте! 🏆",
   "contest_yuango_hint": "💚 <b>Yuan Go</b> — главное меню. Выберите раздел 👇",
-  "contest_top_you": "📍 <b>Ваше место:</b> #{rank} · ⭐ <b>{points}</b> баллов",
-  "contest_top_you_none": "📍 <b>Вас ещё нет в рейтинге</b> · ⭐ 0 баллов",
-  "contest_top_lead": "🏆 Поздравляем — вы на <b>1 месте!</b>",
-  "contest_top_gap": "⬆️ До {n} места: ещё <b>{need}</b> баллов",
+  "contest_top_you": "👤 <b>Ваш результат</b>\n🏅 Место: <b>#{rank}</b>\n⭐ Баллы: <b>{points}</b>",
+  "contest_top_you_none": "👤 <b>Ваш результат</b>\nВас ещё нет в рейтинге · ⭐ <b>0</b>\nНаберите баллы и войдите в ТОП! 🚀",
+  "contest_top_lead": "🥇 <b>Отлично!</b> Вы сейчас лидируете.",
+  "contest_top_gap": "🎯 До {n} места ещё <b>{need}</b> баллов",
   "contest_top_done": "✅ {n} место — ваше",
-  "contest_top_prev": "🔼 До {n} места (выше): ещё <b>{need}</b> баллов"
+  "contest_top_prev": "📌 До места #{n} ещё <b>{need}</b> баллов"
 }
