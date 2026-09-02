@@ -11,8 +11,9 @@ let reviewCarouselIndex = 0;
 let reviewCarouselTimer = null;
 const STORAGE_KEY = "yuan_exchange_v8";
 const PROMO_WELCOME_KEY = "yuan_promo_welcome_seen";
-const PROMO_MIN_CNY = 50;
-const PROMO_BONUS_CNY = 5;
+let PROMO_MIN_CNY = 50;
+let PROMO_BONUS_CNY = 5;
+let PROMO_ENABLED = true;
 const DEMO_TX_IDS = [];
 let promoDetailsReturnTo = "home";
 
@@ -207,6 +208,7 @@ function applyI18n() {
     btn.classList.toggle("active", btn.dataset.lang === state.lang);
   });
   document.documentElement.lang = state.lang;
+  applyPromoCopy();
 }
 
 function go(screen) {
@@ -251,7 +253,7 @@ function go(screen) {
 }
 
 function isFirstPurchaseEligible() {
-  return !state.transactions.some((x) => x.status === "done");
+  return PROMO_ENABLED && !state.transactions.some((x) => x.status === "done");
 }
 
 function markPromoWelcomeSeen() {
@@ -261,11 +263,40 @@ function markPromoWelcomeSeen() {
 }
 
 function shouldShowPromoWelcome() {
+  if (!PROMO_ENABLED) return false;
   try {
     return !localStorage.getItem(PROMO_WELCOME_KEY);
   } catch (_) {
     return true;
   }
+}
+
+function applyPromoCopy() {
+  const cny = PROMO_BONUS_CNY;
+  const min = PROMO_MIN_CNY;
+  const setText = (sel, text) => {
+    const el = document.querySelector(sel);
+    if (el) el.textContent = text;
+  };
+  setText('[data-i18n="promo.bannerBonus"]', `${cny} CNY BONUS`);
+  setText('[data-i18n="promo.welcomeTitle"]', `${cny} CNY BONUS!`);
+  setText('[data-i18n="promo.detailsBonus"]', `${cny} CNY BONUS!`);
+  const buyBonus =
+    state.lang === "ru"
+      ? `вы получите ${cny} CNY BONUS`
+      : state.lang === "en"
+        ? `you get ${cny} CNY BONUS`
+        : `siz ${cny} CNY BONUS`;
+  setText('[data-i18n="promo.buyBonus"]', buyBonus);
+  const term2 =
+    state.lang === "ru"
+      ? `Минимальная сумма покупки: ${min} CNY`
+      : state.lang === "en"
+        ? `Minimum purchase amount: ${min} CNY`
+        : `Minimal xarid miqdori: ${min} CNY`;
+  setText('[data-i18n="promo.term2"]', term2);
+  const coin = document.querySelector(".promo-coin");
+  if (coin) coin.textContent = `${cny} CNY`;
 }
 
 function updatePromoUi() {
@@ -277,6 +308,15 @@ function updatePromoUi() {
   if (notice) {
     const amount = Number(document.getElementById("cnyAmount")?.value) || 0;
     notice.hidden = !(eligible && amount >= PROMO_MIN_CNY);
+  }
+
+  // Bonus o'chirilgan bo'lsa promo ekranlardan chiqamiz
+  if (!PROMO_ENABLED) {
+    const active = document.querySelector(".screen.active")?.dataset.screen;
+    if (active === "promo-welcome" || active === "promo-details") {
+      markPromoWelcomeSeen();
+      go("home");
+    }
   }
 }
 
@@ -1154,6 +1194,11 @@ async function syncConfig() {
     MAX_CNY = Number(c.max_cny) || MAX_CNY;
     WORK_HOURS = c.work_hours || WORK_HOURS;
     COMMISSION = c.commission || COMMISSION;
+    PROMO_ENABLED = c.bonus_enabled !== false && c.bonus_enabled !== 0 && c.bonus_enabled !== "0";
+    if (c.bonus_cny != null && Number(c.bonus_cny) > 0) PROMO_BONUS_CNY = Number(c.bonus_cny);
+    if (c.bonus_min_cny != null && Number(c.bonus_min_cny) > 0) PROMO_MIN_CNY = Number(c.bonus_min_cny);
+    applyPromoCopy();
+    updatePromoUi();
     renderHome();
     updateBuyCalc();
     const amountInput = document.getElementById("cnyAmount");
@@ -2052,6 +2097,10 @@ async function bootApp() {
   updateBuyCalc();
   renderProfile();
   renderHome();
+
+  try {
+    await syncConfig();
+  } catch (_) {}
 
   const START_SCREENS = ["home", "buy", "transactions", "rate-stats", "qrs", "profile", "purchases"];
   const requestedScreen = new URLSearchParams(location.search).get("screen");

@@ -290,6 +290,60 @@ def is_operator(chat_id: int) -> bool:
     return bool(user and user.get("is_admin"))
 
 
+def bot_access_allowed(chat_id: int) -> bool:
+    """Test rejimda faqat test userlar + admin/super admin."""
+    if not db.is_test_mode():
+        return True
+    tid = int(chat_id)
+    if tid == OWNER_TELEGRAM_ID or is_operator(tid):
+        return True
+    return tid in db.list_test_user_ids()
+
+
+def _telegram_user_id_from_update(update) -> int | None:
+    if update is None:
+        return None
+    if getattr(update, "message", None) and update.message.chat:
+        return int(update.message.chat.id)
+    if getattr(update, "edited_message", None) and update.edited_message.chat:
+        return int(update.edited_message.chat.id)
+    if getattr(update, "callback_query", None) and update.callback_query.from_user:
+        return int(update.callback_query.from_user.id)
+    if getattr(update, "inline_query", None) and update.inline_query.from_user:
+        return int(update.inline_query.from_user.id)
+    if getattr(update, "my_chat_member", None) and update.my_chat_member.from_user:
+        return int(update.my_chat_member.from_user.id)
+    if getattr(update, "chat_member", None) and update.chat_member.from_user:
+        return int(update.chat_member.from_user.id)
+    return None
+
+
+def _maybe_notify_test_block(update, chat_id: int) -> None:
+    """Bloklangan foydalanuvchiga faqat /start da qisqa javob."""
+    msg = getattr(update, "message", None)
+    text = (msg.text or "") if msg else ""
+    if not text.startswith("/start"):
+        return
+    try:
+        bot.send_message(
+            chat_id,
+            "🔧 <b>Bot hozircha test rejimida.</b>\n"
+            "Tez orada barcha foydalanuvchilar uchun ochiladi.",
+            parse_mode="HTML",
+        )
+    except Exception:
+        pass
+
+
+def dispatch_telegram_update(update) -> None:
+    """Test rejim filtridan o'tkazib update ni ishlaydi."""
+    uid = _telegram_user_id_from_update(update)
+    if uid is not None and not bot_access_allowed(uid):
+        _maybe_notify_test_block(update, uid)
+        return
+    telebot.TeleBot.process_new_updates(bot, [update])
+
+
 def send_start_menu(chat_id: int, text: str | None = None) -> None:
     sync_owner(chat_id)
     user = db.get_user(chat_id)
@@ -382,12 +436,14 @@ def cmd_start(message: types.Message) -> None:
         send_start_menu(chat_id)
         return
 
-    # Yangi foydalanuvchi — darhol 5 CNY bonus xabari
-    bot.send_message(
-        chat_id,
-        t(chat_id, "promo_welcome_new"),
-        parse_mode="HTML",
-    )
+    # Yangi foydalanuvchi — bonus yoqilgan bo'lsa darhol xabar
+    bonus = db.get_bonus_config()
+    if bonus.get("enabled"):
+        bot.send_message(
+            chat_id,
+            t(chat_id, "promo_welcome_new").format(cny=bonus.get("cny", 5)),
+            parse_mode="HTML",
+        )
     continue_registration(chat_id)
 
 
@@ -796,8 +852,17 @@ def telegram_webhook():
     if getattr(update, "update_id", None) is not None:
         if not db.claim_telegram_update(update.update_id):
             return "", 200
-    bot.process_new_updates([update])
+    dispatch_telegram_update(update)
     return "", 200
+
+
+def _require_public_access(tg_id: int | None):
+    """Mini App API — test rejimda ruxsatsiz foydalanuvchini bloklash."""
+    if not tg_id:
+        return jsonify(ok=False, error="tg_id required"), 400
+    if not bot_access_allowed(int(tg_id)):
+        return jsonify(ok=False, error="maintenance", message="Bot test rejimida"), 503
+    return None
 
 @app.get("/api/health")
 def health():
@@ -807,8 +872,9 @@ def health():
 @app.get("/api/me")
 def api_me():
     tg_id = request.args.get("tg_id", type=int)
-    if not tg_id:
-        return jsonify(ok=False, error="tg_id required"), 400
+    blocked = _require_public_access(tg_id)
+    if blocked:
+        return blocked
 
     user = db.get_user(tg_id)
     if not user or not user.get("registered"):
@@ -836,6 +902,9 @@ def api_me_update():
         return jsonify(ok=False, error="tg_id required"), 400
 
     tg_id = int(tg_id)
+    blocked = _require_public_access(tg_id)
+    if blocked:
+        return blocked
     db.ensure_user(tg_id, touch_seen=True)
     fields = {
         key: str(data[key]).strip()
@@ -1009,6 +1078,9 @@ def api_upload():
     tg_id = _request_tg_id()
     if not tg_id:
         return jsonify(ok=False, error="tg_id required"), 400
+    blocked = _require_public_access(tg_id)
+    if blocked:
+        return blocked
 
     file = request.files.get("file")
     if not file or not file.filename:
@@ -1048,6 +1120,9 @@ def api_tx_create():
             tg_id = None
     if not tg_id:
         return jsonify(ok=False, error="tg_id required"), 400
+    blocked = _require_public_access(tg_id)
+    if blocked:
+        return blocked
     db.touch_last_seen(tg_id)
     tx_id = data.get("tx_id")
     if not tx_id:
@@ -1543,6 +1618,133 @@ def api_admin_settings_set():
     return jsonify(ok=True, settings=new, broadcast=changed)
 
 
+def broadcast_bonus_enabled(cny, min_cny) -> None:
+    """Bonus yoqilganda barcha foydalanuvchilarga xabar."""
+    import time
+
+    sent = 0
+    failed = 0
+    for user in db.broadcast_audience():
+        chat_id = int(user["telegram_id"])
+        lang = user.get("lang") or "uz"
+        text = (
+            I18N.get(lang, I18N["uz"])
+            .get("promo_bonus_on", I18N["uz"]["promo_bonus_on"])
+            .format(cny=cny, min=min_cny)
+        )
+        kb = types.InlineKeyboardMarkup()
+        kb.add(
+            types.InlineKeyboardButton(
+                text=I18N.get(lang, I18N["uz"])["settings_open"],
+                web_app=types.WebAppInfo(url=f"{WEBAPP_URL}/?tg_id={chat_id}"),
+            )
+        )
+        try:
+            bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=kb)
+            sent += 1
+            time.sleep(0.04)
+        except Exception as exc:
+            failed += 1
+            print(f"Bonus broadcast xato ({chat_id}): {exc}")
+    print(f"Bonus broadcast: sent={sent}, failed={failed}")
+
+
+@app.get("/api/admin/bonus")
+def api_admin_bonus_get():
+    if not _check_super_admin():
+        return jsonify(ok=False, error="forbidden"), 403
+    return jsonify(ok=True, bonus=db.get_bonus_config())
+
+
+@app.post("/api/admin/bonus")
+def api_admin_bonus_set():
+    """Bonusni yoqish/o'chirish. Yoqilganda cny majburiy, hammaga xabar."""
+    if not _check_super_admin():
+        return jsonify(ok=False, error="forbidden"), 403
+    data = request.get_json(silent=True) or {}
+    enabled = bool(data.get("enabled"))
+    old = db.get_bonus_config()
+
+    if not enabled:
+        db.set_settings({"bonus_enabled": "0"})
+        return jsonify(ok=True, bonus=db.get_bonus_config(), broadcast=False)
+
+    try:
+        cny = float(str(data.get("cny") if data.get("cny") is not None else old.get("cny") or 5).replace(",", "."))
+    except (TypeError, ValueError):
+        return jsonify(ok=False, error="cny invalid"), 400
+    if cny <= 0 or cny > 10000:
+        return jsonify(ok=False, error="cny must be 0.01–10000"), 400
+
+    cny_i = int(cny) if abs(cny - round(cny)) < 1e-9 else cny
+    min_cny = old.get("min_cny", 50)
+    db.set_settings(
+        {
+            "bonus_enabled": "1",
+            "bonus_cny": str(cny_i),
+        }
+    )
+    bonus = db.get_bonus_config()
+    should_broadcast = (not old.get("enabled")) or (old.get("cny") != bonus.get("cny"))
+    if should_broadcast:
+        threading.Thread(
+            target=broadcast_bonus_enabled,
+            args=(bonus.get("cny", cny_i), min_cny),
+            daemon=True,
+        ).start()
+    return jsonify(ok=True, bonus=bonus, broadcast=should_broadcast)
+
+
+@app.get("/api/admin/test-mode")
+def api_admin_test_mode_get():
+    if not _check_super_admin():
+        return jsonify(ok=False, error="forbidden"), 403
+    return jsonify(ok=True, test_mode=db.get_test_mode_config())
+
+
+@app.post("/api/admin/test-mode")
+def api_admin_test_mode_set():
+    """Test rejimini yoqish/o'chirish."""
+    admin_id = _check_super_admin()
+    if not admin_id:
+        return jsonify(ok=False, error="forbidden"), 403
+    data = request.get_json(silent=True) or {}
+    enabled = bool(data.get("enabled"))
+    if enabled:
+        # Admin o'zini avtomatik test user qilib qo'yadi
+        db.add_test_user(admin_id, note="super admin")
+        if OWNER_TELEGRAM_ID and OWNER_TELEGRAM_ID != admin_id:
+            db.add_test_user(OWNER_TELEGRAM_ID, note="owner")
+    cfg = db.set_test_mode(enabled)
+    return jsonify(ok=True, test_mode=cfg)
+
+
+@app.post("/api/admin/test-users")
+def api_admin_test_users_add():
+    admin_id = _check_super_admin()
+    if not admin_id:
+        return jsonify(ok=False, error="forbidden"), 403
+    data = request.get_json(silent=True) or {}
+    try:
+        tid = int(str(data.get("telegram_id") or "").strip())
+    except (TypeError, ValueError):
+        return jsonify(ok=False, error="telegram_id invalid"), 400
+    if tid <= 0:
+        return jsonify(ok=False, error="telegram_id invalid"), 400
+    note = str(data.get("note") or "").strip()
+    user = db.add_test_user(tid, note=note)
+    return jsonify(ok=True, user=user, test_mode=db.get_test_mode_config())
+
+
+@app.delete("/api/admin/test-users/<int:telegram_id>")
+def api_admin_test_users_delete(telegram_id: int):
+    if not _check_super_admin():
+        return jsonify(ok=False, error="forbidden"), 403
+    if not db.remove_test_user(telegram_id):
+        return jsonify(ok=False, error="not found"), 404
+    return jsonify(ok=True, test_mode=db.get_test_mode_config())
+
+
 def _as_float(value, default: float = 0.0) -> float:
     try:
         return float(str(value).replace(" ", "").replace(",", "."))
@@ -1620,7 +1822,7 @@ def broadcast_settings_change(old: dict, new: dict) -> None:
 
     sent = 0
     failed = 0
-    for user in db.all_users():
+    for user in db.broadcast_audience():
         chat_id = int(user["telegram_id"])
         lang = user.get("lang") or "uz"
         text = build_settings_broadcast_text(lang, old, new)
@@ -1667,7 +1869,7 @@ def send_broadcast_to_all(text: str, image_url: str = "") -> tuple[int, int]:
 
     sent = 0
     failed = 0
-    for user in db.all_users():
+    for user in db.broadcast_audience():
         chat_id = int(user["telegram_id"])
         try:
             if photo_path:
@@ -1901,6 +2103,7 @@ def api_public_cards():
 @app.get("/api/config")
 def api_public_config():
     s = db.get_settings()
+    bonus = db.get_bonus_config()
     return jsonify(
         ok=True,
         config={
@@ -1909,6 +2112,9 @@ def api_public_config():
             "max_cny": int(float(s.get("max_cny") or 500)),
             "work_hours": s.get("work_hours") or "07:00–23:00",
             "commission": s.get("commission") or "0%",
+            "bonus_enabled": bool(bonus.get("enabled")),
+            "bonus_cny": bonus.get("cny", 5),
+            "bonus_min_cny": bonus.get("min_cny", 50),
         },
     )
 
@@ -2308,9 +2514,29 @@ def run_bot() -> None:
     print(f"WebApp URL: {WEBAPP_URL}")
     if not WEBAPP_READY:
         print("OGOHLANTIRISH: WEBAPP_URL HTTPS emas — Telegram Mini App ishlamaydi.")
+    try:
+        bot.remove_webhook()
+    except Exception:
+        pass
+    offset = None
+    # Pending update'larni tashlab yuborish
+    try:
+        pending = bot.get_updates(offset=-1, timeout=1)
+        if pending:
+            offset = pending[-1].update_id + 1
+    except Exception:
+        offset = None
     while True:
         try:
-            bot.infinity_polling(skip_pending=True, timeout=25, long_polling_timeout=20)
+            updates = bot.get_updates(
+                offset=offset, timeout=25, long_polling_timeout=20
+            )
+            for update in updates:
+                offset = update.update_id + 1
+                if getattr(update, "update_id", None) is not None:
+                    if not db.claim_telegram_update(update.update_id):
+                        continue
+                dispatch_telegram_update(update)
         except Exception as exc:
             print(f"Bot polling xato, 3s dan keyin qayta: {exc}")
             time.sleep(3)

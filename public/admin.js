@@ -942,6 +942,85 @@ async function loadSettings() {
   document.getElementById("setMax").value = s.max_cny || "";
   document.getElementById("setCommission").value = s.commission || "";
   document.getElementById("setHours").value = s.work_hours || "";
+  await loadBonusSettings();
+  await loadTestModeSettings();
+}
+
+async function loadBonusSettings() {
+  const data = await api("/api/admin/bonus");
+  if (!data.ok) return;
+  const b = data.bonus || {};
+  const status = document.getElementById("bonusStatusText");
+  const enablePanel = document.getElementById("bonusEnablePanel");
+  const disablePanel = document.getElementById("bonusDisablePanel");
+  const input = document.getElementById("bonusCnyInput");
+  if (input) input.value = b.cny || 5;
+  const changeInput = document.getElementById("bonusCnyChangeInput");
+  if (changeInput) changeInput.value = b.cny || 5;
+  if (b.enabled) {
+    if (status) {
+      status.innerHTML = `Holat: <b style="color:#16a34a">Yoqilgan</b> · <b>${b.cny} CNY</b> bonus (min. ${b.min_cny || 50} CNY)`;
+    }
+    if (enablePanel) enablePanel.hidden = true;
+    if (disablePanel) disablePanel.hidden = false;
+  } else {
+    if (status) {
+      status.innerHTML = `Holat: <b style="color:#dc2626">O‘chirilgan</b> — ilova va botda bonus ko‘rinmaydi`;
+    }
+    if (enablePanel) enablePanel.hidden = false;
+    if (disablePanel) disablePanel.hidden = true;
+  }
+}
+
+function renderTestUsersTable(users) {
+  const tbody = document.getElementById("testUsersTableBody");
+  if (!tbody) return;
+  const list = users || [];
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#64748b">Test user yo‘q — Telegram ID qo‘shing</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list
+    .map((u) => {
+      const name = `${u.first_name || ""} ${u.last_name || ""}`.trim() || "—";
+      return `
+        <tr>
+          <td><b>${u.telegram_id}</b></td>
+          <td>${name}</td>
+          <td>${u.username ? "@" + u.username : "—"}</td>
+          <td>${u.note || "—"}</td>
+          <td>
+            <button class="act-btn no" type="button" data-test-user-del="${u.telegram_id}" title="O‘chirish">✕</button>
+          </td>
+        </tr>`;
+    })
+    .join("");
+}
+
+async function loadTestModeSettings() {
+  const data = await api("/api/admin/test-mode");
+  if (!data.ok) return;
+  const tm = data.test_mode || {};
+  const status = document.getElementById("testModeStatusText");
+  const panel = document.getElementById("testUsersPanel");
+  const onBtn = document.getElementById("testModeOnBtn");
+  const offBtn = document.getElementById("testModeOffBtn");
+  if (tm.enabled) {
+    if (status) {
+      status.innerHTML = `Holat: <b style="color:#ea580c">TEST REJIM YOQILGAN</b> · ${tm.count || 0} ta test user`;
+    }
+    if (panel) panel.hidden = false;
+    if (onBtn) onBtn.hidden = true;
+    if (offBtn) offBtn.hidden = false;
+  } else {
+    if (status) {
+      status.innerHTML = `Holat: <b style="color:#16a34a">Oddiy rejim</b> — bot hammaga ochiq`;
+    }
+    if (panel) panel.hidden = true;
+    if (onBtn) onBtn.hidden = false;
+    if (offBtn) offBtn.hidden = true;
+  }
+  renderTestUsersTable(tm.users || []);
 }
 
 async function loadStats() {
@@ -1308,6 +1387,170 @@ async function init() {
             ? "Sozlamalar saqlandi — barcha foydalanuvchilarga yuborilmoqda"
             : "Sozlamalar saqlandi"
         );
+      } else toast(data.error || "Xatolik");
+    } catch (_) {
+      toast("Xatolik");
+    } finally {
+      hidePreloader();
+    }
+  });
+
+  document.getElementById("bonusEnableBtn")?.addEventListener("click", async () => {
+    const cny = Number(document.getElementById("bonusCnyInput")?.value || 0);
+    if (!Number.isFinite(cny) || cny <= 0) {
+      toast("Bonus miqdorini kiriting");
+      return;
+    }
+    showPreloader("Bonus yoqilmoqda…");
+    try {
+      const data = await api("/api/admin/bonus", {
+        method: "POST",
+        body: JSON.stringify({ enabled: true, cny }),
+      });
+      if (data.ok) {
+        toast(
+          data.broadcast
+            ? `Bonus yoqildi (${data.bonus?.cny} CNY) — hammaga xabar yuborilmoqda`
+            : "Bonus yoqildi"
+        );
+        await loadBonusSettings();
+      } else toast(data.error || "Xatolik");
+    } catch (_) {
+      toast("Xatolik");
+    } finally {
+      hidePreloader();
+    }
+  });
+
+  document.getElementById("bonusChangeBtn")?.addEventListener("click", async () => {
+    const cny = Number(document.getElementById("bonusCnyChangeInput")?.value || 0);
+    if (!Number.isFinite(cny) || cny <= 0) {
+      toast("Bonus miqdorini kiriting");
+      return;
+    }
+    showPreloader("Bonus yangilanmoqda…");
+    try {
+      const data = await api("/api/admin/bonus", {
+        method: "POST",
+        body: JSON.stringify({ enabled: true, cny }),
+      });
+      if (data.ok) {
+        toast(
+          data.broadcast
+            ? `Bonus ${data.bonus?.cny} CNY — hammaga xabar yuborilmoqda`
+            : "Bonus yangilandi"
+        );
+        await loadBonusSettings();
+      } else toast(data.error || "Xatolik");
+    } catch (_) {
+      toast("Xatolik");
+    } finally {
+      hidePreloader();
+    }
+  });
+
+  document.getElementById("bonusDisableBtn")?.addEventListener("click", async () => {
+    if (!confirm("Bonusni o‘chirasizmi? Ilova va botdan aksiya yashirinadi.")) return;
+    showPreloader("Bonus o‘chirilmoqda…");
+    try {
+      const data = await api("/api/admin/bonus", {
+        method: "POST",
+        body: JSON.stringify({ enabled: false }),
+      });
+      if (data.ok) {
+        toast("Bonus o‘chirildi");
+        await loadBonusSettings();
+      } else toast(data.error || "Xatolik");
+    } catch (_) {
+      toast("Xatolik");
+    } finally {
+      hidePreloader();
+    }
+  });
+
+  document.getElementById("testModeOnBtn")?.addEventListener("click", async () => {
+    if (
+      !confirm(
+        "Test rejimni yoqasizmi?\nBot faqat test Telegram ID lar uchun ishlaydi, qolganlar uchun to‘xtaydi."
+      )
+    ) {
+      return;
+    }
+    showPreloader("Test rejim yoqilmoqda…");
+    try {
+      const data = await api("/api/admin/test-mode", {
+        method: "POST",
+        body: JSON.stringify({ enabled: true }),
+      });
+      if (data.ok) {
+        toast("Test rejim yoqildi");
+        await loadTestModeSettings();
+      } else toast(data.error || "Xatolik");
+    } catch (_) {
+      toast("Xatolik");
+    } finally {
+      hidePreloader();
+    }
+  });
+
+  document.getElementById("testModeOffBtn")?.addEventListener("click", async () => {
+    if (!confirm("Test rejimni o‘chirib, botni hammaga ochasizmi?")) return;
+    showPreloader("Test rejim o‘chirilmoqda…");
+    try {
+      const data = await api("/api/admin/test-mode", {
+        method: "POST",
+        body: JSON.stringify({ enabled: false }),
+      });
+      if (data.ok) {
+        toast("Test rejim o‘chirildi — bot ochiq");
+        await loadTestModeSettings();
+      } else toast(data.error || "Xatolik");
+    } catch (_) {
+      toast("Xatolik");
+    } finally {
+      hidePreloader();
+    }
+  });
+
+  document.getElementById("testUserAddBtn")?.addEventListener("click", async () => {
+    const raw = document.getElementById("testUserIdInput")?.value.trim() || "";
+    const note = document.getElementById("testUserNoteInput")?.value.trim() || "";
+    if (!/^\d{5,15}$/.test(raw)) {
+      toast("To‘g‘ri Telegram ID kiriting");
+      return;
+    }
+    showPreloader("Qo‘shilmoqda…");
+    try {
+      const data = await api("/api/admin/test-users", {
+        method: "POST",
+        body: JSON.stringify({ telegram_id: Number(raw), note }),
+      });
+      if (data.ok) {
+        toast("Test user qo‘shildi");
+        const idInput = document.getElementById("testUserIdInput");
+        const noteInput = document.getElementById("testUserNoteInput");
+        if (idInput) idInput.value = "";
+        if (noteInput) noteInput.value = "";
+        await loadTestModeSettings();
+      } else toast(data.error || "Xatolik");
+    } catch (_) {
+      toast("Xatolik");
+    } finally {
+      hidePreloader();
+    }
+  });
+
+  document.getElementById("testUsersTableBody")?.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-test-user-del]");
+    if (!btn) return;
+    const tid = btn.dataset.testUserDel;
+    if (!confirm(`Test user ${tid} ni olib tashlaysizmi?`)) return;
+    showPreloader("O‘chirilmoqda…");
+    try {
+      const data = await api(`/api/admin/test-users/${tid}`, { method: "DELETE" });
+      if (data.ok) {
+        toast("O‘chirildi");
+        await loadTestModeSettings();
       } else toast(data.error || "Xatolik");
     } catch (_) {
       toast("Xatolik");

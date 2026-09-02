@@ -136,6 +136,10 @@ _defaults = {
     "max_cny": "500",
     "work_hours": "07:00–23:00",
     "commission": "0%",
+    "bonus_enabled": "1",
+    "bonus_cny": "5",
+    "bonus_min_cny": "50",
+    "test_mode": "0",
 }
 for _k, _v in _defaults.items():
     _conn.execute(
@@ -666,6 +670,126 @@ def set_settings(values: dict) -> dict:
             )
         _conn.commit()
     return get_settings()
+
+
+def get_bonus_config() -> dict:
+    """Birinchi xarid bonusi sozlamalari."""
+    s = get_settings()
+    enabled_raw = str(s.get("bonus_enabled", "1")).strip().lower()
+    enabled = enabled_raw in ("1", "true", "yes", "on")
+    try:
+        cny = float(str(s.get("bonus_cny") or "5").replace(",", "."))
+    except (TypeError, ValueError):
+        cny = 5.0
+    try:
+        min_cny = float(str(s.get("bonus_min_cny") or "50").replace(",", "."))
+    except (TypeError, ValueError):
+        min_cny = 50.0
+    if cny <= 0:
+        cny = 5.0
+    if min_cny <= 0:
+        min_cny = 50.0
+    # Butun son ko'rsatish uchun
+    cny_i = int(cny) if abs(cny - round(cny)) < 1e-9 else cny
+    min_i = int(min_cny) if abs(min_cny - round(min_cny)) < 1e-9 else min_cny
+    return {
+        "enabled": enabled,
+        "cny": cny_i,
+        "min_cny": min_i,
+    }
+
+
+# ---------------------------------------------------------------- Test mode
+
+_conn.execute(
+    """
+    CREATE TABLE IF NOT EXISTS test_users (
+        telegram_id INTEGER PRIMARY KEY,
+        note        TEXT    NOT NULL DEFAULT '',
+        created_at  TEXT    NOT NULL
+    )
+    """
+)
+_conn.commit()
+
+
+def is_test_mode() -> bool:
+    raw = str(get_settings().get("test_mode", "0")).strip().lower()
+    return raw in ("1", "true", "yes", "on")
+
+
+def set_test_mode(enabled: bool) -> dict:
+    set_settings({"test_mode": "1" if enabled else "0"})
+    return get_test_mode_config()
+
+
+def list_test_user_ids() -> set[int]:
+    rows = _conn.execute("SELECT telegram_id FROM test_users").fetchall()
+    return {int(r["telegram_id"]) for r in rows}
+
+
+def list_test_users() -> list[dict]:
+    rows = _conn.execute(
+        "SELECT t.telegram_id, t.note, t.created_at,"
+        " u.first_name, u.last_name, u.username, u.unique_id"
+        " FROM test_users t"
+        " LEFT JOIN users u ON u.telegram_id = t.telegram_id"
+        " ORDER BY t.created_at DESC"
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def add_test_user(telegram_id: int, note: str = "") -> dict:
+    tid = int(telegram_id)
+    ensure_user(tid)
+    with _lock:
+        _conn.execute(
+            "INSERT INTO test_users (telegram_id, note, created_at) VALUES (?, ?, ?)"
+            " ON CONFLICT(telegram_id) DO UPDATE SET note = excluded.note",
+            (tid, str(note or "").strip(), _now()),
+        )
+        _conn.commit()
+    return next((u for u in list_test_users() if int(u["telegram_id"]) == tid), {"telegram_id": tid})
+
+
+def remove_test_user(telegram_id: int) -> bool:
+    with _lock:
+        cur = _conn.execute(
+            "DELETE FROM test_users WHERE telegram_id = ?", (int(telegram_id),)
+        )
+        _conn.commit()
+        return cur.rowcount > 0
+
+
+def is_bot_access_allowed(telegram_id: int, *, allow_admins: bool = True) -> bool:
+    """Test rejimda faqat test userlar (+ adminlar boshqaruv uchun)."""
+    if not is_test_mode():
+        return True
+    tid = int(telegram_id)
+    if tid in list_test_user_ids():
+        return True
+    if allow_admins:
+        user = get_user(tid)
+        if user and (user.get("is_super_admin") or user.get("is_admin")):
+            return True
+    return False
+
+
+def broadcast_audience() -> list[dict]:
+    """Ommaviy xabar oluvchilar — test rejimda faqat test userlar."""
+    users = all_users()
+    if not is_test_mode():
+        return users
+    allowed = list_test_user_ids()
+    return [u for u in users if int(u["telegram_id"]) in allowed]
+
+
+def get_test_mode_config() -> dict:
+    return {
+        "enabled": is_test_mode(),
+        "users": list_test_users(),
+        "count": len(list_test_user_ids()),
+    }
 
 
 # ---------------------------------------------------------------- Rate history
