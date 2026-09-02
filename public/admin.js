@@ -25,6 +25,7 @@ const PAGE_TITLES = {
   cards: "Karta va hisoblar",
   qrs: "QR kodlar",
   settings: "Sozlamalar",
+  contest: "Konkurs",
   messages: "Xabarlar",
   stats: "Statistika",
 };
@@ -124,6 +125,7 @@ function setPage(page) {
   if (page === "transactions") loadAllTxTable();
   if (page === "cards") loadCards();
   if (page === "settings") loadSettings();
+  if (page === "contest") loadContestSettings();
   if (page === "messages") loadBroadcasts();
   if (page === "stats") loadStats();
 }
@@ -943,7 +945,6 @@ async function loadSettings() {
   document.getElementById("setCommission").value = s.commission || "";
   document.getElementById("setHours").value = s.work_hours || "";
   await loadBonusSettings();
-  await loadContestSettings();
   await loadTestModeSettings();
 }
 

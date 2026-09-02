@@ -411,7 +411,8 @@ def send_earn_panel(chat_id: int) -> None:
 
 def send_invite_panel(chat_id: int) -> None:
     link = referral_link(int(chat_id))
-    share = t(chat_id, "contest_share_text").format(link=link)
+    # Matnda link yo'q — Telegram share url parametri bitta link qo'shadi
+    share = t(chat_id, "contest_share_text")
     kb = types.InlineKeyboardMarkup()
     kb.add(
         types.InlineKeyboardButton(
@@ -879,14 +880,30 @@ def cmd_contest_my(message: types.Message) -> None:
     if not contest.is_contest_enabled():
         bot.send_message(message.chat.id, t(message.chat.id, "contest_off"))
         return
-    apply_contest_bootstrap(message.chat.id)
-    rank, pts = contest.user_rank(message.chat.id)
+    chat_id = message.chat.id
+    apply_contest_bootstrap(chat_id)
+    rank, pts = contest.user_rank(chat_id)
+    p = contest.ensure_profile(chat_id)
+    ok, no = "✅", "❌"
+    has_invite = contest.invite_count(chat_id) > 0
     bot.send_message(
-        message.chat.id,
-        t(message.chat.id, "contest_my_points").format(
+        chat_id,
+        t(chat_id, "contest_my_points").format(
             points=pts,
             rank=rank or "—",
-            invites=contest.invite_count(message.chat.id),
+            invites=contest.invite_count(chat_id),
+            line_entry=t(chat_id, "contest_line_entry").format(
+                ok=ok if int(p.get("self_entry") or 0) else no
+            ),
+            line_reg=t(chat_id, "contest_line_reg").format(
+                ok=ok if int(p.get("self_register") or 0) else no
+            ),
+            line_channel=t(chat_id, "contest_line_channel").format(
+                ok=ok if int(p.get("self_channel") or 0) else no
+            ),
+            line_invite=t(chat_id, "contest_line_invite").format(
+                ok=ok if has_invite else no
+            ),
         ),
         parse_mode="HTML",
     )
