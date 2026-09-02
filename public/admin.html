@@ -492,6 +492,53 @@
             </div>
 
             <div class="panel" style="margin-top:16px">
+              <div class="panel-head"><h2>Konkurs (referal)</h2></div>
+              <div class="form-panel" style="display:block">
+                <p id="contestStatusText" class="hint" style="margin:0 0 12px;padding:0">Yuklanmoqda…</p>
+                <div id="contestEnablePanel" hidden>
+                  <div class="form-grid">
+                    <label>Muddat (kun)
+                      <input id="contestDaysInput" type="number" min="1" max="365" step="1" value="7" />
+                    </label>
+                    <label>Kanal (@yoki link)
+                      <input id="contestChannelInput" type="text" placeholder="@Yuan_Go" />
+                    </label>
+                  </div>
+                  <p class="hint" style="margin:8px 0 12px;padding:0">
+                    Yoqilganda /start da Konkurs + Yuan Go menyusi chiqadi. 2 kun qolganda va oxirgi kuni hammaga eslatma yuboriladi.
+                  </p>
+                  <div class="form-actions">
+                    <button id="contestEnableBtn" class="btn btn-approve" type="button">Konkursni yoqish</button>
+                  </div>
+                </div>
+                <div id="contestDisablePanel" hidden>
+                  <div class="form-grid" style="margin-bottom:12px">
+                    <label>Kanal (@yoki link)
+                      <input id="contestChannelChangeInput" type="text" placeholder="@Yuan_Go" />
+                    </label>
+                  </div>
+                  <div class="form-actions" style="gap:8px;flex-wrap:wrap">
+                    <button id="contestChannelSaveBtn" class="btn btn-hold" type="button">Kanalni saqlash</button>
+                    <button id="contestDisableBtn" class="btn btn-cancel" type="button">Konkursni o‘chirish</button>
+                  </div>
+                  <div class="table-wrap" style="margin-top:14px">
+                    <table class="data-table">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>Telegram ID</th>
+                          <th>Ism</th>
+                          <th>Ball</th>
+                        </tr>
+                      </thead>
+                      <tbody id="contestTopBody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel" style="margin-top:16px">
               <div class="panel-head"><h2>Test rejim</h2></div>
               <div class="form-panel" style="display:block">
                 <p id="testModeStatusText" class="hint" style="margin:0 0 12px;padding:0">Yuklanmoqda…</p>
@@ -696,6 +743,6 @@
 
     <div id="toast" class="toast" hidden></div>
 
-    <script src="/admin.js?v=22"></script>
+    <script src="/admin.js?v=23"></script>
   </body>
 </html>

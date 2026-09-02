@@ -943,6 +943,7 @@ async function loadSettings() {
   document.getElementById("setCommission").value = s.commission || "";
   document.getElementById("setHours").value = s.work_hours || "";
   await loadBonusSettings();
+  await loadContestSettings();
   await loadTestModeSettings();
 }
 
@@ -969,6 +970,52 @@ async function loadBonusSettings() {
     }
     if (enablePanel) enablePanel.hidden = false;
     if (disablePanel) disablePanel.hidden = true;
+  }
+}
+
+async function loadContestSettings() {
+  const data = await api("/api/admin/contest");
+  if (!data.ok) return;
+  const c = data.contest || {};
+  const status = document.getElementById("contestStatusText");
+  const enablePanel = document.getElementById("contestEnablePanel");
+  const disablePanel = document.getElementById("contestDisablePanel");
+  const daysInput = document.getElementById("contestDaysInput");
+  const chInput = document.getElementById("contestChannelInput");
+  const chChange = document.getElementById("contestChannelChangeInput");
+  if (daysInput) daysInput.value = c.days || 7;
+  if (chInput) chInput.value = c.channel || "@Yuan_Go";
+  if (chChange) chChange.value = c.channel || "@Yuan_Go";
+  const left =
+    c.left_days == null ? "—" : `${Number(c.left_days).toFixed(1)} kun qoldi`;
+  if (c.enabled) {
+    if (status) {
+      status.innerHTML = `Holat: <b style="color:#16a34a">Yoqilgan</b> · ${c.days || "?"} kun · tugash: <b>${c.ends_at || "—"}</b> · ${left}<br/>Kanal: <code>${c.channel || ""}</code>`;
+    }
+    if (enablePanel) enablePanel.hidden = true;
+    if (disablePanel) disablePanel.hidden = false;
+  } else {
+    if (status) {
+      status.innerHTML = `Holat: <b style="color:#dc2626">O‘chirilgan</b> — /start odatiy menyu`;
+    }
+    if (enablePanel) enablePanel.hidden = false;
+    if (disablePanel) disablePanel.hidden = true;
+  }
+  const tbody = document.getElementById("contestTopBody");
+  if (tbody) {
+    const top = data.top || [];
+    tbody.innerHTML = top.length
+      ? top
+          .map(
+            (r, i) => `<tr>
+          <td>${i + 1}</td>
+          <td><code>${r.telegram_id}</code></td>
+          <td>${[r.first_name, r.last_name].filter(Boolean).join(" ") || r.username || "—"}</td>
+          <td><b>${r.points || 0}</b></td>
+        </tr>`
+          )
+          .join("")
+      : `<tr><td colspan="4" class="muted">Hali ball yo‘q</td></tr>`;
   }
 }
 
@@ -1460,6 +1507,79 @@ async function init() {
       if (data.ok) {
         toast("Bonus o‘chirildi");
         await loadBonusSettings();
+      } else toast(data.error || "Xatolik");
+    } catch (_) {
+      toast("Xatolik");
+    } finally {
+      hidePreloader();
+    }
+  });
+
+  document.getElementById("contestEnableBtn")?.addEventListener("click", async () => {
+    const days = Number(document.getElementById("contestDaysInput")?.value || 0);
+    const channel = document.getElementById("contestChannelInput")?.value || "";
+    if (!Number.isFinite(days) || days < 1) {
+      toast("Muddatni kiriting (kun)");
+      return;
+    }
+    if (
+      !confirm(
+        `Konkursni ${days} kunga yoqasizmi?\n/start da Konkurs + Yuan Go chiqadi.`
+      )
+    ) {
+      return;
+    }
+    showPreloader("Konkurs yoqilmoqda…");
+    try {
+      const data = await api("/api/admin/contest", {
+        method: "POST",
+        body: JSON.stringify({ enabled: true, days, channel }),
+      });
+      if (data.ok) {
+        toast("Konkurs yoqildi");
+        await loadContestSettings();
+      } else toast(data.error || "Xatolik");
+    } catch (_) {
+      toast("Xatolik");
+    } finally {
+      hidePreloader();
+    }
+  });
+
+  document.getElementById("contestDisableBtn")?.addEventListener("click", async () => {
+    if (!confirm("Konkursni o‘chirasizmi? Ballar saqlanadi, /start odatiy bo‘ladi.")) return;
+    showPreloader("Konkurs o‘chirilmoqda…");
+    try {
+      const data = await api("/api/admin/contest", {
+        method: "POST",
+        body: JSON.stringify({ enabled: false }),
+      });
+      if (data.ok) {
+        toast("Konkurs o‘chirildi");
+        await loadContestSettings();
+      } else toast(data.error || "Xatolik");
+    } catch (_) {
+      toast("Xatolik");
+    } finally {
+      hidePreloader();
+    }
+  });
+
+  document.getElementById("contestChannelSaveBtn")?.addEventListener("click", async () => {
+    const channel = document.getElementById("contestChannelChangeInput")?.value || "";
+    if (!String(channel).trim()) {
+      toast("Kanalni kiriting");
+      return;
+    }
+    showPreloader("Kanal saqlanmoqda…");
+    try {
+      const data = await api("/api/admin/contest", {
+        method: "POST",
+        body: JSON.stringify({ channel }),
+      });
+      if (data.ok) {
+        toast("Kanal saqlandi");
+        await loadContestSettings();
       } else toast(data.error || "Xatolik");
     } catch (_) {
       toast("Xatolik");

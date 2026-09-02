@@ -14,7 +14,7 @@ import threading
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from urllib.parse import parse_qsl
+from urllib.parse import parse_qsl, quote
 
 try:
     import fcntl
@@ -26,6 +26,7 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_from_directory
 from telebot import types
 
+import contest
 import db
 
 load_dotenv()
@@ -43,6 +44,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
 PORT = int(os.getenv("PORT", "3000"))
 WEBAPP_URL = os.getenv("WEBAPP_URL", f"http://localhost:{PORT}").strip()
 NGROK_AUTHTOKEN = os.getenv("NGROK_AUTHTOKEN", "").strip()
+BOT_USERNAME = os.getenv("BOT_USERNAME", "yuan_go_bot").strip().lstrip("@") or "yuan_go_bot"
 OPERATOR_USERNAME = os.getenv("OPERATOR_USERNAME", "jasurbek0521").strip().lstrip("@")
 OWNER_TELEGRAM_ID = int(os.getenv("OWNER_TELEGRAM_ID", "1024063189") or "1024063189")
 def _parse_channel(value: str):
@@ -239,7 +241,217 @@ def main_keyboard(chat_id) -> types.ReplyKeyboardMarkup:
         types.KeyboardButton(text=tr["btn_contact"]),
     )
     keyboard.row(types.KeyboardButton(text=tr["btn_settings"]))
+    if contest.is_contest_enabled() and not is_operator(chat_id):
+        keyboard.row(types.KeyboardButton(text=tr["btn_contest_back"]))
     return keyboard
+
+
+def contest_root_keyboard(chat_id) -> types.ReplyKeyboardMarkup:
+    tr = I18N[(db.get_user(int(chat_id)) or {}).get("lang", "uz")]
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.row(
+        types.KeyboardButton(text=tr["btn_contest"]),
+        types.KeyboardButton(text=tr["btn_yuango"]),
+    )
+    return keyboard
+
+
+def contest_menu_keyboard(chat_id) -> types.ReplyKeyboardMarkup:
+    tr = I18N[(db.get_user(int(chat_id)) or {}).get("lang", "uz")]
+    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.row(types.KeyboardButton(text=tr["btn_contest_earn"]))
+    keyboard.row(
+        types.KeyboardButton(text=tr["btn_contest_invite"]),
+        types.KeyboardButton(text=tr["btn_contest_my"]),
+    )
+    keyboard.row(
+        types.KeyboardButton(text=tr["btn_contest_top"]),
+        types.KeyboardButton(text=tr["btn_contest_rules"]),
+    )
+    keyboard.row(types.KeyboardButton(text=tr["btn_contest_back"]))
+    return keyboard
+
+
+def referral_link(telegram_id: int) -> str:
+    return f"https://t.me/{BOT_USERNAME}?start=ref{int(telegram_id)}"
+
+
+def channel_url(channel: str) -> str:
+    ch = (channel or "").strip()
+    if ch.startswith("https://") or ch.startswith("http://"):
+        return ch
+    if ch.startswith("@"):
+        return f"https://t.me/{ch[1:]}"
+    if ch.startswith("t.me/"):
+        return f"https://{ch}"
+    return f"https://t.me/{ch.lstrip('@')}"
+
+
+def is_channel_member(chat_id: int, channel: str) -> bool:
+    try:
+        member = bot.get_chat_member(channel, int(chat_id))
+        return member.status in ("creator", "administrator", "member", "restricted")
+    except Exception as exc:
+        print(f"getChatMember xato ({chat_id}, {channel}): {exc}")
+        return False
+
+
+def notify_contest_points(chat_id: int, points: int, total: int) -> None:
+    try:
+        bot.send_message(
+            chat_id,
+            t(chat_id, "contest_points_gain").format(points=points, total=total),
+            parse_mode="HTML",
+        )
+    except Exception:
+        pass
+
+
+def notify_referrer(award: dict | None) -> None:
+    if not award:
+        return
+    rid = int(award.get("referrer_id") or 0)
+    if not rid:
+        return
+    event = award.get("event") or ""
+    key = {
+        "ref_start": "contest_ref_notify_start",
+        "ref_channel": "contest_ref_notify_channel",
+        "ref_register": "contest_ref_notify_register",
+    }.get(event)
+    if not key:
+        return
+    try:
+        bot.send_message(
+            rid,
+            t(rid, key).format(
+                points=award.get("points", 0),
+                total=award.get("total", 0),
+            ),
+            parse_mode="HTML",
+        )
+    except Exception:
+        pass
+
+
+def apply_contest_bootstrap(chat_id: int) -> None:
+    for award in contest.bootstrap_self_for_user(int(chat_id)):
+        notify_contest_points(chat_id, award["points"], award["total"])
+
+
+def send_contest_root(chat_id: int, text: str | None = None) -> None:
+    bot.send_message(
+        chat_id,
+        text or t(chat_id, "contest_root"),
+        parse_mode="HTML",
+        reply_markup=contest_root_keyboard(chat_id),
+    )
+
+
+def send_contest_menu(chat_id: int) -> None:
+    apply_contest_bootstrap(chat_id)
+    bot.send_message(
+        chat_id,
+        t(chat_id, "contest_menu"),
+        parse_mode="HTML",
+        reply_markup=contest_menu_keyboard(chat_id),
+    )
+
+
+def earn_checklist_text(chat_id: int) -> tuple[str, types.InlineKeyboardMarkup | None]:
+    p = contest.ensure_profile(int(chat_id))
+    ok = "✅"
+    no = "❌"
+    has_invite = contest.invite_count(int(chat_id)) > 0
+    lines = "\n".join(
+        [
+            t(chat_id, "contest_line_entry").format(
+                ok=ok if int(p.get("self_entry") or 0) else no
+            ),
+            t(chat_id, "contest_line_reg").format(
+                ok=ok if int(p.get("self_register") or 0) else no
+            ),
+            t(chat_id, "contest_line_channel").format(
+                ok=ok if int(p.get("self_channel") or 0) else no
+            ),
+            t(chat_id, "contest_line_invite").format(ok=ok if has_invite else no),
+        ]
+    )
+    total = int(p.get("points") or 0)
+    text = t(chat_id, "contest_earn_title").format(lines=lines, total=total)
+    kb = types.InlineKeyboardMarkup()
+    buttons = []
+    if not int(p.get("self_register") or 0):
+        buttons.append(
+            types.InlineKeyboardButton(
+                t(chat_id, "contest_btn_register"), callback_data="contest:reg"
+            )
+        )
+    if not int(p.get("self_channel") or 0):
+        buttons.append(
+            types.InlineKeyboardButton(
+                t(chat_id, "contest_btn_channel"), callback_data="contest:ch"
+            )
+        )
+    buttons.append(
+        types.InlineKeyboardButton(
+            t(chat_id, "contest_btn_invite"), callback_data="contest:inv"
+        )
+    )
+    for btn in buttons:
+        kb.add(btn)
+    return text, kb if buttons else None
+
+
+def send_earn_panel(chat_id: int) -> None:
+    apply_contest_bootstrap(chat_id)
+    text, kb = earn_checklist_text(chat_id)
+    bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=kb)
+
+
+def send_invite_panel(chat_id: int) -> None:
+    link = referral_link(int(chat_id))
+    share = t(chat_id, "contest_share_text").format(link=link)
+    kb = types.InlineKeyboardMarkup()
+    kb.add(
+        types.InlineKeyboardButton(
+            t(chat_id, "contest_btn_share"),
+            url=(
+                "https://t.me/share/url?url="
+                + quote(link, safe="")
+                + "&text="
+                + quote(share, safe="")
+            ),
+        )
+    )
+    bot.send_message(
+        chat_id,
+        t(chat_id, "contest_invite_msg").format(link=link),
+        parse_mode="HTML",
+        reply_markup=kb,
+    )
+
+
+def send_channel_panel(chat_id: int) -> None:
+    cfg = contest.get_contest_config()
+    ch = cfg["channel"]
+    kb = types.InlineKeyboardMarkup()
+    kb.add(
+        types.InlineKeyboardButton(
+            t(chat_id, "contest_btn_open_channel"), url=channel_url(ch)
+        )
+    )
+    kb.add(
+        types.InlineKeyboardButton(
+            t(chat_id, "contest_btn_check_sub"), callback_data="contest:check_sub"
+        )
+    )
+    bot.send_message(
+        chat_id,
+        t(chat_id, "contest_channel_msg").format(channel=ch),
+        parse_mode="HTML",
+        reply_markup=kb,
+    )
 
 
 def lang_keyboard() -> types.InlineKeyboardMarkup:
@@ -349,15 +561,36 @@ def send_start_menu(chat_id: int, text: str | None = None) -> None:
     user = db.get_user(chat_id)
     if is_super(chat_id):
         msg = text or "👋 <b>Xush kelibsiz!</b>\n\nPastdagi tugmalardan rolni tanlang:"
-    elif is_operator(chat_id):
+        bot.send_message(
+            chat_id, msg, parse_mode="HTML", reply_markup=main_keyboard(chat_id)
+        )
+        return
+    if is_operator(chat_id):
         msg = text or "🛡 <b>Admin</b>\n\nPastdagi tugmalardan tanlang:"
-    else:
+        bot.send_message(
+            chat_id, msg, parse_mode="HTML", reply_markup=main_keyboard(chat_id)
+        )
+        return
+    if contest.is_contest_enabled():
+        apply_contest_bootstrap(chat_id)
         name = full_name(user) if user else ""
         msg = text or (
             t(chat_id, "welcome_back").format(name=name)
             if is_registered(chat_id)
-            else "💱 <b>Yuan Go</b>"
+            else t(chat_id, "contest_root")
         )
+        if is_registered(chat_id) and text is None:
+            msg = t(chat_id, "welcome_back").format(name=name) + "\n\n" + t(
+                chat_id, "contest_root"
+            )
+        send_contest_root(chat_id, msg)
+        return
+    name = full_name(user) if user else ""
+    msg = text or (
+        t(chat_id, "welcome_back").format(name=name)
+        if is_registered(chat_id)
+        else "💱 <b>Yuan Go</b>"
+    )
     bot.send_message(chat_id, msg, parse_mode="HTML", reply_markup=main_keyboard(chat_id))
 
 
@@ -423,6 +656,12 @@ def cmd_start(message: types.Message) -> None:
         bot.send_message(chat_id, https_required_text())
         return
 
+    # Referal deep-link
+    ref_id = contest.parse_ref_payload(message.text or "")
+    if ref_id and ref_id != int(chat_id) and contest.is_contest_enabled():
+        award = contest.on_referral_start(int(chat_id), ref_id)
+        notify_referrer(award)
+
     # Admin / super admin — darhol rol tugmalari
     if is_operator(chat_id):
         send_start_menu(chat_id)
@@ -444,6 +683,9 @@ def cmd_start(message: types.Message) -> None:
             t(chat_id, "promo_welcome_new").format(cny=bonus.get("cny", 5)),
             parse_mode="HTML",
         )
+    if contest.is_contest_enabled():
+        apply_contest_bootstrap(chat_id)
+        send_contest_root(chat_id)
     continue_registration(chat_id)
 
 
@@ -470,11 +712,16 @@ def cb_language(call: types.CallbackQuery) -> None:
 
     if is_registered(chat_id):
         db.clear_reg_step(chat_id)
+        reply_kb = (
+            contest_root_keyboard(chat_id)
+            if contest.is_contest_enabled() and not is_operator(chat_id)
+            else main_keyboard(chat_id)
+        )
         bot.send_message(
             chat_id,
             t(chat_id, "lang_changed").format(lang_name=LANG_NAMES[lang]),
             parse_mode="HTML",
-            reply_markup=main_keyboard(chat_id),
+            reply_markup=reply_kb,
         )
         return
 
@@ -544,6 +791,11 @@ def finish_registration(chat_id, phone: str) -> None:
 
     user = db.get_user(chat_id)
     key = "info_updated" if editing else "registered"
+    reply_kb = (
+        contest_root_keyboard(chat_id)
+        if contest.is_contest_enabled() and not is_operator(chat_id)
+        else main_keyboard(chat_id)
+    )
     bot.send_message(
         chat_id,
         t(chat_id, key).format(
@@ -552,8 +804,16 @@ def finish_registration(chat_id, phone: str) -> None:
             phone=user["phone"],
         ),
         parse_mode="HTML",
-        reply_markup=main_keyboard(chat_id),
+        reply_markup=reply_kb,
     )
+
+    if not editing and contest.is_contest_enabled():
+        self_award = contest.award_self_register(int(chat_id))
+        if self_award:
+            notify_contest_points(
+                chat_id, self_award["points"], self_award["total"]
+            )
+        notify_referrer(contest.on_referral_register(int(chat_id)))
 
 
 def require_registration(message: types.Message) -> bool:
@@ -566,6 +826,178 @@ def require_registration(message: types.Message) -> bool:
         reply_markup=types.ReplyKeyboardRemove(),
     )
     return False
+
+
+# ---------------------------------------------------------------- Contest
+
+
+@bot.message_handler(func=lambda m: m.text in labels("btn_contest"))
+def cmd_contest_open(message: types.Message) -> None:
+    if not contest.is_contest_enabled():
+        bot.send_message(message.chat.id, t(message.chat.id, "contest_off"))
+        send_start_menu(message.chat.id)
+        return
+    send_contest_menu(message.chat.id)
+
+
+@bot.message_handler(func=lambda m: m.text in labels("btn_yuango"))
+def cmd_yuango_open(message: types.Message) -> None:
+    bot.send_message(
+        message.chat.id,
+        t(message.chat.id, "contest_yuango_hint"),
+        parse_mode="HTML",
+        reply_markup=main_keyboard(message.chat.id),
+    )
+
+
+@bot.message_handler(func=lambda m: m.text in labels("btn_contest_back"))
+def cmd_contest_back(message: types.Message) -> None:
+    if contest.is_contest_enabled() and not is_operator(message.chat.id):
+        send_contest_root(message.chat.id)
+    else:
+        send_start_menu(message.chat.id)
+
+
+@bot.message_handler(func=lambda m: m.text in labels("btn_contest_earn"))
+def cmd_contest_earn(message: types.Message) -> None:
+    if not contest.is_contest_enabled():
+        bot.send_message(message.chat.id, t(message.chat.id, "contest_off"))
+        return
+    send_earn_panel(message.chat.id)
+
+
+@bot.message_handler(func=lambda m: m.text in labels("btn_contest_invite"))
+def cmd_contest_invite(message: types.Message) -> None:
+    if not contest.is_contest_enabled():
+        bot.send_message(message.chat.id, t(message.chat.id, "contest_off"))
+        return
+    send_invite_panel(message.chat.id)
+
+
+@bot.message_handler(func=lambda m: m.text in labels("btn_contest_my"))
+def cmd_contest_my(message: types.Message) -> None:
+    if not contest.is_contest_enabled():
+        bot.send_message(message.chat.id, t(message.chat.id, "contest_off"))
+        return
+    apply_contest_bootstrap(message.chat.id)
+    rank, pts = contest.user_rank(message.chat.id)
+    bot.send_message(
+        message.chat.id,
+        t(message.chat.id, "contest_my_points").format(
+            points=pts,
+            rank=rank or "—",
+            invites=contest.invite_count(message.chat.id),
+        ),
+        parse_mode="HTML",
+    )
+
+
+@bot.message_handler(func=lambda m: m.text in labels("btn_contest_top"))
+def cmd_contest_top(message: types.Message) -> None:
+    if not contest.is_contest_enabled():
+        bot.send_message(message.chat.id, t(message.chat.id, "contest_off"))
+        return
+    rows = contest.top_ranking(10)
+    if not rows:
+        bot.send_message(
+            message.chat.id, t(message.chat.id, "contest_top_empty"), parse_mode="HTML"
+        )
+        return
+    lines = []
+    for i, row in enumerate(rows, 1):
+        name = (
+            f"{row.get('first_name') or ''} {row.get('last_name') or ''}".strip()
+            or (f"@{row['username']}" if row.get("username") else str(row["telegram_id"]))
+        )
+        lines.append(
+            t(message.chat.id, "contest_top_row").format(
+                n=i, name=name, points=row.get("points") or 0
+            )
+        )
+    bot.send_message(
+        message.chat.id,
+        t(message.chat.id, "contest_top_title").format(rows="\n".join(lines)),
+        parse_mode="HTML",
+    )
+
+
+@bot.message_handler(func=lambda m: m.text in labels("btn_contest_rules"))
+def cmd_contest_rules(message: types.Message) -> None:
+    if not contest.is_contest_enabled():
+        bot.send_message(message.chat.id, t(message.chat.id, "contest_off"))
+        return
+    cfg = contest.get_contest_config()
+    bot.send_message(
+        message.chat.id,
+        t(message.chat.id, "contest_rules").format(
+            pool=f"{contest.PRIZE_POOL:,}".replace(",", " "),
+            p1=f"{contest.PRIZE_1:,}".replace(",", " "),
+            p2=f"{contest.PRIZE_2:,}".replace(",", " "),
+            p3=f"{contest.PRIZE_3:,}".replace(",", " "),
+            days=cfg["days"],
+            ends=cfg["ends_at"] or "—",
+        ),
+        parse_mode="HTML",
+    )
+
+
+@bot.callback_query_handler(func=lambda c: c.data and c.data.startswith("contest:"))
+def cb_contest(call: types.CallbackQuery) -> None:
+    chat_id = call.message.chat.id
+    action = call.data.split(":", 1)[1]
+    if not contest.is_contest_enabled():
+        bot.answer_callback_query(call.id, t(chat_id, "contest_off"), show_alert=True)
+        return
+
+    if action == "reg":
+        bot.answer_callback_query(call.id)
+        if is_registered(chat_id):
+            award = contest.award_self_register(chat_id)
+            if award:
+                notify_contest_points(chat_id, award["points"], award["total"])
+            else:
+                bot.send_message(chat_id, t(chat_id, "contest_sub_already"))
+            send_earn_panel(chat_id)
+            return
+        continue_registration(chat_id)
+        return
+
+    if action == "ch":
+        bot.answer_callback_query(call.id)
+        send_channel_panel(chat_id)
+        return
+
+    if action == "inv":
+        bot.answer_callback_query(call.id)
+        send_invite_panel(chat_id)
+        return
+
+    if action == "check_sub":
+        cfg = contest.get_contest_config()
+        if not is_channel_member(chat_id, cfg["channel"]):
+            bot.answer_callback_query(
+                call.id, t(chat_id, "contest_sub_fail"), show_alert=True
+            )
+            return
+        result = contest.on_channel_subscribe(chat_id)
+        self_award = result.get("self")
+        if self_award:
+            bot.answer_callback_query(
+                call.id,
+                t(chat_id, "contest_sub_ok").format(points=self_award["points"]),
+            )
+            notify_contest_points(
+                chat_id, self_award["points"], self_award["total"]
+            )
+        else:
+            bot.answer_callback_query(
+                call.id, t(chat_id, "contest_sub_already"), show_alert=True
+            )
+        notify_referrer(result.get("ref"))
+        send_earn_panel(chat_id)
+        return
+
+    bot.answer_callback_query(call.id)
 
 
 # ---------------------------------------------------------------- Settings
@@ -1618,7 +2050,7 @@ def api_admin_settings_set():
     return jsonify(ok=True, settings=new, broadcast=changed)
 
 
-def broadcast_bonus_enabled(cny, min_cny) -> None:
+def broadcast_bonus_enabled(cny, min_cny=None) -> None:
     """Bonus yoqilganda barcha foydalanuvchilarga xabar."""
     import time
 
@@ -1630,7 +2062,7 @@ def broadcast_bonus_enabled(cny, min_cny) -> None:
         text = (
             I18N.get(lang, I18N["uz"])
             .get("promo_bonus_on", I18N["uz"]["promo_bonus_on"])
-            .format(cny=cny, min=min_cny)
+            .format(cny=cny)
         )
         kb = types.InlineKeyboardMarkup()
         kb.add(
@@ -1693,6 +2125,74 @@ def api_admin_bonus_set():
             daemon=True,
         ).start()
     return jsonify(ok=True, bonus=bonus, broadcast=should_broadcast)
+
+
+@app.get("/api/admin/contest")
+def api_admin_contest_get():
+    if not _check_super_admin():
+        return jsonify(ok=False, error="forbidden"), 403
+    cfg = contest.get_contest_config()
+    top = contest.top_ranking(20)
+    return jsonify(ok=True, contest=cfg, top=top)
+
+
+@app.post("/api/admin/contest")
+def api_admin_contest_set():
+    """Konkursni yoqish/o'chirish, muddat va kanal."""
+    if not _check_super_admin():
+        return jsonify(ok=False, error="forbidden"), 403
+    data = request.get_json(silent=True) or {}
+    channel = data.get("channel")
+
+    # Faqat kanal yangilash
+    if "enabled" not in data and channel is not None:
+        cfg = contest.update_contest_channel(str(channel))
+        return jsonify(ok=True, contest=cfg)
+
+    enabled = bool(data.get("enabled"))
+    days = data.get("days")
+
+    if not enabled:
+        cfg = contest.set_contest_enabled(False)
+        return jsonify(ok=True, contest=cfg)
+
+    try:
+        d = int(days) if days is not None else contest.get_contest_config()["days"]
+    except (TypeError, ValueError):
+        return jsonify(ok=False, error="days invalid"), 400
+    if d < 1 or d > 365:
+        return jsonify(ok=False, error="days must be 1–365"), 400
+    cfg = contest.set_contest_enabled(True, days=d, channel=channel)
+    return jsonify(ok=True, contest=cfg)
+
+
+def broadcast_contest_reminder(kind: str) -> None:
+    import time
+
+    key = "contest_remind_2d" if kind == "2d" else "contest_remind_1d"
+    sent = 0
+    failed = 0
+    for user in db.broadcast_audience():
+        chat_id = int(user["telegram_id"])
+        lang = user.get("lang") or "uz"
+        text = I18N.get(lang, I18N["uz"]).get(key, I18N["uz"][key])
+        try:
+            bot.send_message(chat_id, text, parse_mode="HTML")
+            sent += 1
+            time.sleep(0.04)
+        except Exception as exc:
+            failed += 1
+            print(f"Contest remind xato ({chat_id}): {exc}")
+    contest.mark_reminder_sent(kind)
+    print(f"Contest reminder {kind}: sent={sent}, failed={failed}")
+
+
+def run_due_contest_reminders() -> None:
+    try:
+        for kind in contest.due_contest_reminders():
+            broadcast_contest_reminder(kind)
+    except Exception as exc:
+        print(f"Contest reminder scheduler xato: {exc}")
 
 
 @app.get("/api/admin/test-mode")
@@ -1923,6 +2423,7 @@ def run_due_broadcasts() -> None:
                 process_broadcast_item(item)
             except Exception as exc:
                 print(f"Broadcast ishlash xato #{item.get('id')}: {exc}")
+        run_due_contest_reminders()
     except Exception as exc:
         print(f"Broadcast scheduler xato: {exc}")
 
