@@ -408,12 +408,13 @@ def send_earn_panel(chat_id: int) -> None:
 def send_invite_panel(chat_id: int) -> None:
     link = referral_link(int(chat_id))
     cfg = contest.get_contest_config()
+    pool = contest.fmt_uzs_amount(cfg["prize_pool"])
+    p1 = contest.fmt_uzs_amount(cfg["prize_1"])
+    p2 = contest.fmt_uzs_amount(cfg["prize_2"])
+    p3 = contest.fmt_uzs_amount(cfg["prize_3"])
     # Matnda link yo'q — Telegram share url parametri bitta link qo'shadi
     share = t(chat_id, "contest_share_text").format(
-        pool=contest.fmt_uzs_amount(cfg["prize_pool"]),
-        p1=contest.fmt_uzs_amount(cfg["prize_1"]),
-        p2=contest.fmt_uzs_amount(cfg["prize_2"]),
-        p3=contest.fmt_uzs_amount(cfg["prize_3"]),
+        pool=pool, p1=p1, p2=p2, p3=p3
     )
     kb = types.InlineKeyboardMarkup()
     kb.add(
@@ -429,7 +430,9 @@ def send_invite_panel(chat_id: int) -> None:
     )
     bot.send_message(
         chat_id,
-        t(chat_id, "contest_invite_msg").format(link=link),
+        t(chat_id, "contest_invite_msg").format(
+            link=link, pool=pool, p1=p1, p2=p2, p3=p3
+        ),
         parse_mode="HTML",
         reply_markup=kb,
     )
