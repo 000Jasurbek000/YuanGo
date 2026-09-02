@@ -436,19 +436,19 @@ def mask_public_name(
     username: str | None = None,
     telegram_id: int | None = None,
 ) -> str:
-    """TOP uchun: ism to‘liq, familiya 3 belgi+..., otasining ismi yashirinadi."""
-    first = str(first_name or "").strip()
+    """TOP uchun: ism va familiya 3 belgi+..., otasining ismi yashirinadi."""
+
+    def _mask3(word: str) -> str:
+        w = (word or "").strip()
+        if not w:
+            return ""
+        return (w[:3] if len(w) >= 3 else w) + "..."
+
+    first = str(first_name or "").strip().split()[0] if str(first_name or "").strip() else ""
     # last_name: "Familiya OtasiningIsmi" — faqat birinchi so‘z (familiya)
     last_parts = str(last_name or "").strip().split()
     family = last_parts[0] if last_parts else ""
-    if family:
-        if len(family) <= 3:
-            masked_family = family + "..."
-        else:
-            masked_family = family[:3] + "..."
-    else:
-        masked_family = ""
-    name = f"{first} {masked_family}".strip()
+    name = f"{_mask3(first)} {_mask3(family)}".strip()
     if name:
         return name
     if username:
