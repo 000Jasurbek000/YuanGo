@@ -90,7 +90,7 @@
   "contest_sub_already": "ℹ️ Bu ball allaqachon olingan.",
   "contest_invite_msg": "👥 <b>Do‘stni taklif qiling</b>\n\nSizning shaxsiy havolangiz:\n<code>{link}</code>\n\nHar bir do‘st uchun: start +5 · obuna +10 · ro‘yxat +10 (maks. 25)",
   "contest_btn_share": "📤 Ulashish",
-  "contest_share_text": "💸 Yuan Go konkursida qatnashing va 300 000 so‘m yuting!\n\n🏆 Ball yig‘ing, do‘stlaringizni taklif qiling — sovrin sizniki!\n🥇 1-o‘rin: 150 000 · 🥈 100 000 · 🥉 50 000 so‘m\n\n⚡️ Hozir boshlang va reytingda yuqoriga chiqing! 🚀\n\n👇 Boshlash uchun bosing:",
+  "contest_share_text": "💸 Yuan Go konkursida qatnashing va {pool} so‘m yuting!\n\n🏆 Ball yig‘ing, do‘stlaringizni taklif qiling — sovrin sizniki!\n🥇 1-o‘rin: {p1} · 🥈 {p2} · 🥉 {p3} so‘m\n\n⚡️ Hozir boshlang va reytingda yuqoriga chiqing! 🚀\n\n👇 Boshlash uchun bosing:",
   "contest_my_points": "⭐ <b>Mening ballarim</b>\n\n💎 Ballaringiz: <b>{points}</b>\n🏆 Reytingingiz: <b>#{rank}</b>\n👥 Takliflaringiz: <b>{invites}</b>\n\n📋 <b>Shaxsiy progress</b>\n{line_entry}\n{line_reg}\n{line_channel}\n{line_invite}\n\n🎯 Davom eting — TOP 3 ga chiqing!",
   "contest_top_title": "🏆 <b>TOP reyting</b>\n\n{rows}",
   "contest_top_empty": "Hali ball yo‘q. Birinchi bo‘ling!",

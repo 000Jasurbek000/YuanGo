@@ -542,6 +542,29 @@
               <div class="panel-head"><h2>Konkurs (referal)</h2></div>
               <div class="form-panel" style="display:block">
                 <p id="contestStatusText" class="hint" style="margin:0 0 12px;padding:0">Yuklanmoqda…</p>
+
+                <h3 style="margin:4px 0 10px;font-size:15px">💰 Sovrinlar (so‘m)</h3>
+                <div class="form-grid" style="margin-bottom:12px">
+                  <label>Sovrin jamg‘armasi
+                    <input id="contestPrizePool" type="number" min="0" step="1000" value="300000" />
+                  </label>
+                  <label>🥇 1-o‘rin
+                    <input id="contestPrize1" type="number" min="0" step="1000" value="150000" />
+                  </label>
+                  <label>🥈 2-o‘rin
+                    <input id="contestPrize2" type="number" min="0" step="1000" value="100000" />
+                  </label>
+                  <label>🥉 3-o‘rin
+                    <input id="contestPrize3" type="number" min="0" step="1000" value="50000" />
+                  </label>
+                </div>
+                <div class="form-actions" style="margin-bottom:16px">
+                  <button id="contestPrizesSaveBtn" class="btn btn-hold" type="button">Sovrinlarni saqlash</button>
+                </div>
+                <p class="hint" style="margin:0 0 14px;padding:0">
+                  Bu summalar botdagi <b>Shartlar</b> va ulashish matnida chiqadi.
+                </p>
+
                 <div id="contestEnablePanel" hidden>
                   <div class="form-grid">
                     <label>Muddat (kun)
@@ -751,6 +774,6 @@
 
     <div id="toast" class="toast" hidden></div>
 
-    <script src="/admin.js?v=24"></script>
+    <script src="/admin.js?v=25"></script>
   </body>
 </html>

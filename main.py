@@ -407,8 +407,14 @@ def send_earn_panel(chat_id: int) -> None:
 
 def send_invite_panel(chat_id: int) -> None:
     link = referral_link(int(chat_id))
+    cfg = contest.get_contest_config()
     # Matnda link yo'q — Telegram share url parametri bitta link qo'shadi
-    share = t(chat_id, "contest_share_text")
+    share = t(chat_id, "contest_share_text").format(
+        pool=contest.fmt_uzs_amount(cfg["prize_pool"]),
+        p1=contest.fmt_uzs_amount(cfg["prize_1"]),
+        p2=contest.fmt_uzs_amount(cfg["prize_2"]),
+        p3=contest.fmt_uzs_amount(cfg["prize_3"]),
+    )
     kb = types.InlineKeyboardMarkup()
     kb.add(
         types.InlineKeyboardButton(
@@ -943,10 +949,10 @@ def cmd_contest_rules(message: types.Message) -> None:
     bot.send_message(
         message.chat.id,
         t(message.chat.id, "contest_rules").format(
-            pool=f"{contest.PRIZE_POOL:,}".replace(",", " "),
-            p1=f"{contest.PRIZE_1:,}".replace(",", " "),
-            p2=f"{contest.PRIZE_2:,}".replace(",", " "),
-            p3=f"{contest.PRIZE_3:,}".replace(",", " "),
+            pool=contest.fmt_uzs_amount(cfg["prize_pool"]),
+            p1=contest.fmt_uzs_amount(cfg["prize_1"]),
+            p2=contest.fmt_uzs_amount(cfg["prize_2"]),
+            p3=contest.fmt_uzs_amount(cfg["prize_3"]),
             days=cfg["days"],
             ends=cfg["ends_at"] or "—",
         ),
@@ -2153,19 +2159,49 @@ def api_admin_contest_get():
 
 @app.post("/api/admin/contest")
 def api_admin_contest_set():
-    """Konkursni yoqish/o'chirish, muddat va kanal."""
+    """Konkursni yoqish/o'chirish, muddat, kanal va sovrinlar."""
     if not _check_super_admin():
         return jsonify(ok=False, error="forbidden"), 403
     data = request.get_json(silent=True) or {}
     channel = data.get("channel")
 
+    def _prizes_from_body():
+        if not any(k in data for k in ("prize_pool", "prize_1", "prize_2", "prize_3")):
+            return None
+        return {
+            "prize_pool": data.get("prize_pool"),
+            "prize_1": data.get("prize_1"),
+            "prize_2": data.get("prize_2"),
+            "prize_3": data.get("prize_3"),
+        }
+
+    # Faqat sovrinlarni yangilash
+    if "enabled" not in data and channel is None and _prizes_from_body() is not None:
+        p = _prizes_from_body()
+        cfg = contest.update_contest_prizes(
+            prize_pool=p["prize_pool"],
+            prize_1=p["prize_1"],
+            prize_2=p["prize_2"],
+            prize_3=p["prize_3"],
+        )
+        return jsonify(ok=True, contest=cfg)
+
     # Faqat kanal yangilash
     if "enabled" not in data and channel is not None:
         cfg = contest.update_contest_channel(str(channel))
+        if _prizes_from_body() is not None:
+            p = _prizes_from_body()
+            cfg = contest.update_contest_prizes(
+                prize_pool=p["prize_pool"],
+                prize_1=p["prize_1"],
+                prize_2=p["prize_2"],
+                prize_3=p["prize_3"],
+            )
         return jsonify(ok=True, contest=cfg)
 
     enabled = bool(data.get("enabled"))
     days = data.get("days")
+    prizes = _prizes_from_body()
 
     if not enabled:
         cfg = contest.set_contest_enabled(False)
@@ -2177,7 +2213,7 @@ def api_admin_contest_set():
         return jsonify(ok=False, error="days invalid"), 400
     if d < 1 or d > 365:
         return jsonify(ok=False, error="days must be 1–365"), 400
-    cfg = contest.set_contest_enabled(True, days=d, channel=channel)
+    cfg = contest.set_contest_enabled(True, days=d, channel=channel, prizes=prizes)
     return jsonify(ok=True, contest=cfg)
 
 

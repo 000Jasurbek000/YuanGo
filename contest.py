@@ -14,14 +14,35 @@ PTS_REF_START = 5
 PTS_REF_REGISTER = 10
 PTS_REF_CHANNEL = 10
 
-PRIZE_POOL = 300_000
-PRIZE_1 = 150_000
-PRIZE_2 = 100_000
-PRIZE_3 = 50_000
+DEFAULT_PRIZE_POOL = 300_000
+DEFAULT_PRIZE_1 = 150_000
+DEFAULT_PRIZE_2 = 100_000
+DEFAULT_PRIZE_3 = 50_000
+
+# Orqaga moslik
+PRIZE_POOL = DEFAULT_PRIZE_POOL
+PRIZE_1 = DEFAULT_PRIZE_1
+PRIZE_2 = DEFAULT_PRIZE_2
+PRIZE_3 = DEFAULT_PRIZE_3
 
 
 def _now() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def _parse_prize(value, default: int) -> int:
+    try:
+        n = int(float(str(value).replace(" ", "").replace(",", ".")))
+    except (TypeError, ValueError):
+        return int(default)
+    return max(0, min(n, 1_000_000_000))
+
+
+def fmt_uzs_amount(n: int | float) -> str:
+    try:
+        return f"{int(n):,}".replace(",", " ")
+    except (TypeError, ValueError):
+        return "0"
 
 
 # --- schema ---
@@ -61,6 +82,10 @@ for _k, _v in {
     "contest_reminded_2d": "0",
     "contest_reminded_1d": "0",
     "contest_started_at": "",
+    "contest_prize_pool": str(DEFAULT_PRIZE_POOL),
+    "contest_prize_1": str(DEFAULT_PRIZE_1),
+    "contest_prize_2": str(DEFAULT_PRIZE_2),
+    "contest_prize_3": str(DEFAULT_PRIZE_3),
 }.items():
     db._conn.execute(
         "INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (_k, _v)
@@ -97,21 +122,75 @@ def get_contest_config() -> dict:
         "reminded_1d": str(s.get("contest_reminded_1d") or "0") in ("1", "true"),
         "started_at": str(s.get("contest_started_at") or ""),
         "left_days": left_days,
-        "prize_pool": PRIZE_POOL,
-        "prize_1": PRIZE_1,
-        "prize_2": PRIZE_2,
-        "prize_3": PRIZE_3,
+        "prize_pool": _parse_prize(s.get("contest_prize_pool"), DEFAULT_PRIZE_POOL),
+        "prize_1": _parse_prize(s.get("contest_prize_1"), DEFAULT_PRIZE_1),
+        "prize_2": _parse_prize(s.get("contest_prize_2"), DEFAULT_PRIZE_2),
+        "prize_3": _parse_prize(s.get("contest_prize_3"), DEFAULT_PRIZE_3),
     }
 
 
+def update_contest_prizes(
+    prize_pool=None,
+    prize_1=None,
+    prize_2=None,
+    prize_3=None,
+) -> dict:
+    cur = get_contest_config()
+    db.set_settings(
+        {
+            "contest_prize_pool": str(
+                _parse_prize(
+                    prize_pool if prize_pool is not None else cur["prize_pool"],
+                    DEFAULT_PRIZE_POOL,
+                )
+            ),
+            "contest_prize_1": str(
+                _parse_prize(
+                    prize_1 if prize_1 is not None else cur["prize_1"],
+                    DEFAULT_PRIZE_1,
+                )
+            ),
+            "contest_prize_2": str(
+                _parse_prize(
+                    prize_2 if prize_2 is not None else cur["prize_2"],
+                    DEFAULT_PRIZE_2,
+                )
+            ),
+            "contest_prize_3": str(
+                _parse_prize(
+                    prize_3 if prize_3 is not None else cur["prize_3"],
+                    DEFAULT_PRIZE_3,
+                )
+            ),
+        }
+    )
+    return get_contest_config()
+
+
 def set_contest_enabled(
-    enabled: bool, days: int | None = None, channel: str | None = None
+    enabled: bool,
+    days: int | None = None,
+    channel: str | None = None,
+    prizes: dict | None = None,
 ) -> dict:
     values: dict = {"contest_enabled": "1" if enabled else "0"}
     if channel is not None:
         ch = str(channel).strip()
         if ch:
             values["contest_channel"] = ch
+    if prizes:
+        values["contest_prize_pool"] = str(
+            _parse_prize(prizes.get("prize_pool"), DEFAULT_PRIZE_POOL)
+        )
+        values["contest_prize_1"] = str(
+            _parse_prize(prizes.get("prize_1"), DEFAULT_PRIZE_1)
+        )
+        values["contest_prize_2"] = str(
+            _parse_prize(prizes.get("prize_2"), DEFAULT_PRIZE_2)
+        )
+        values["contest_prize_3"] = str(
+            _parse_prize(prizes.get("prize_3"), DEFAULT_PRIZE_3)
+        )
     if enabled:
         d = days if days is not None else get_contest_config()["days"]
         try:

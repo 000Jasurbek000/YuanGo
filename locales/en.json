@@ -90,7 +90,7 @@
   "contest_sub_already": "ℹ️ These points were already claimed.",
   "contest_invite_msg": "👥 <b>Invite a friend</b>\n\nYour link:\n<code>{link}</code>\n\nPer friend: start +5 · channel +10 · register +10 (max 25)",
   "contest_btn_share": "📤 Share",
-  "contest_share_text": "💸 Join the Yuan Go contest and win 300,000 UZS!\n\n🏆 Earn points, invite friends — the prize is yours!\n🥇 1st: 150,000 · 🥈 100,000 · 🥉 50,000 UZS\n\n⚡️ Start now and climb the ranking! 🚀\n\n👇 Tap to start:",
+  "contest_share_text": "💸 Join the Yuan Go contest and win {pool} UZS!\n\n🏆 Earn points, invite friends — the prize is yours!\n🥇 1st: {p1} · 🥈 {p2} · 🥉 {p3} UZS\n\n⚡️ Start now and climb the ranking! 🚀\n\n👇 Tap to start:",
   "contest_my_points": "⭐ <b>My points</b>\n\n💎 Your points: <b>{points}</b>\n🏆 Your rank: <b>#{rank}</b>\n👥 Invites: <b>{invites}</b>\n\n📋 <b>Your progress</b>\n{line_entry}\n{line_reg}\n{line_channel}\n{line_invite}\n\n🎯 Keep going — aim for TOP 3!",
   "contest_top_title": "🏆 <b>TOP ranking</b>\n\n{rows}",
   "contest_top_empty": "No points yet. Be the first!",

@@ -987,11 +987,19 @@ async function loadContestSettings() {
   if (daysInput) daysInput.value = c.days || 7;
   if (chInput) chInput.value = c.channel || "@Yuan_Go";
   if (chChange) chChange.value = c.channel || "@Yuan_Go";
+  const pool = document.getElementById("contestPrizePool");
+  const p1 = document.getElementById("contestPrize1");
+  const p2 = document.getElementById("contestPrize2");
+  const p3 = document.getElementById("contestPrize3");
+  if (pool) pool.value = c.prize_pool ?? 300000;
+  if (p1) p1.value = c.prize_1 ?? 150000;
+  if (p2) p2.value = c.prize_2 ?? 100000;
+  if (p3) p3.value = c.prize_3 ?? 50000;
   const left =
     c.left_days == null ? "—" : `${Number(c.left_days).toFixed(1)} kun qoldi`;
   if (c.enabled) {
     if (status) {
-      status.innerHTML = `Holat: <b style="color:#16a34a">Yoqilgan</b> · ${c.days || "?"} kun · tugash: <b>${c.ends_at || "—"}</b> · ${left}<br/>Kanal: <code>${c.channel || ""}</code>`;
+      status.innerHTML = `Holat: <b style="color:#16a34a">Yoqilgan</b> · ${c.days || "?"} kun · tugash: <b>${c.ends_at || "—"}</b> · ${left}<br/>Kanal: <code>${c.channel || ""}</code><br/>Sovrin: <b>${Number(c.prize_pool||0).toLocaleString("uz-UZ")}</b> · 🥇 ${Number(c.prize_1||0).toLocaleString("uz-UZ")} · 🥈 ${Number(c.prize_2||0).toLocaleString("uz-UZ")} · 🥉 ${Number(c.prize_3||0).toLocaleString("uz-UZ")}`;
     }
     if (enablePanel) enablePanel.hidden = true;
     if (disablePanel) disablePanel.hidden = false;
@@ -1018,6 +1026,15 @@ async function loadContestSettings() {
           .join("")
       : `<tr><td colspan="4" class="muted">Hali ball yo‘q</td></tr>`;
   }
+}
+
+function readContestPrizes() {
+  return {
+    prize_pool: Number(document.getElementById("contestPrizePool")?.value || 0),
+    prize_1: Number(document.getElementById("contestPrize1")?.value || 0),
+    prize_2: Number(document.getElementById("contestPrize2")?.value || 0),
+    prize_3: Number(document.getElementById("contestPrize3")?.value || 0),
+  };
 }
 
 function renderTestUsersTable(users) {
@@ -1534,10 +1551,37 @@ async function init() {
     try {
       const data = await api("/api/admin/contest", {
         method: "POST",
-        body: JSON.stringify({ enabled: true, days, channel }),
+        body: JSON.stringify({ enabled: true, days, channel, ...readContestPrizes() }),
       });
       if (data.ok) {
         toast("Konkurs yoqildi");
+        await loadContestSettings();
+      } else toast(data.error || "Xatolik");
+    } catch (_) {
+      toast("Xatolik");
+    } finally {
+      hidePreloader();
+    }
+  });
+
+  document.getElementById("contestPrizesSaveBtn")?.addEventListener("click", async () => {
+    const prizes = readContestPrizes();
+    if (
+      [prizes.prize_pool, prizes.prize_1, prizes.prize_2, prizes.prize_3].some(
+        (n) => !Number.isFinite(n) || n < 0
+      )
+    ) {
+      toast("Sovrin summalarini to‘g‘ri kiriting");
+      return;
+    }
+    showPreloader("Sovrinlar saqlanmoqda…");
+    try {
+      const data = await api("/api/admin/contest", {
+        method: "POST",
+        body: JSON.stringify(prizes),
+      });
+      if (data.ok) {
+        toast("Sovrinlar saqlandi — Shartlarda yangilanadi");
         await loadContestSettings();
       } else toast(data.error || "Xatolik");
     } catch (_) {
