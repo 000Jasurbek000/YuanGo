@@ -919,10 +919,11 @@ def cmd_contest_top(message: types.Message) -> None:
     if not contest.is_contest_enabled():
         bot.send_message(message.chat.id, t(message.chat.id, "contest_off"))
         return
+    chat_id = message.chat.id
     rows = contest.top_ranking(10)
     if not rows:
         bot.send_message(
-            message.chat.id, t(message.chat.id, "contest_top_empty"), parse_mode="HTML"
+            chat_id, t(chat_id, "contest_top_empty"), parse_mode="HTML"
         )
         return
     lines = []
@@ -934,13 +935,49 @@ def cmd_contest_top(message: types.Message) -> None:
             row.get("telegram_id"),
         )
         lines.append(
-            t(message.chat.id, "contest_top_row").format(
+            t(chat_id, "contest_top_row").format(
                 n=i, name=name, points=row.get("points") or 0
             )
         )
+
+    prog = contest.ranking_progress(chat_id)
+    footer = ["", "────────────"]
+    if prog["rank"] is None:
+        footer.append(t(chat_id, "contest_top_you_none"))
+    else:
+        footer.append(
+            t(chat_id, "contest_top_you").format(
+                rank=prog["rank"], points=prog["points"]
+            )
+        )
+        if prog["rank"] == 1:
+            footer.append(t(chat_id, "contest_top_lead"))
+
+    for item in prog["targets"]:
+        if item["done"]:
+            footer.append(
+                t(chat_id, "contest_top_done").format(n=item["place"])
+            )
+        else:
+            footer.append(
+                t(chat_id, "contest_top_gap").format(
+                    n=item["place"], need=item["need"]
+                )
+            )
+
+    prev = prog.get("prev")
+    if prev and prev["place"] not in (1, 2, 3):
+        footer.append(
+            t(chat_id, "contest_top_prev").format(
+                n=prev["place"], need=prev["need"]
+            )
+        )
+
     bot.send_message(
-        message.chat.id,
-        t(message.chat.id, "contest_top_title").format(rows="\n".join(lines)),
+        chat_id,
+        t(chat_id, "contest_top_title").format(rows="\n".join(lines))
+        + "\n"
+        + "\n".join(footer),
         parse_mode="HTML",
     )
 

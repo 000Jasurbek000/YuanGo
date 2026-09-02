@@ -101,5 +101,11 @@
   "contest_ref_notify_register": "✅ Друг зарегистрировался!\n⭐ Вам <b>+{points}</b>\nИтого: <b>{total}</b>",
   "contest_remind_2d": "⏰ <b>Напоминание</b>\n\nДо конца конкурса ~<b>2 дня</b>!\nПродолжайте набирать баллы 🎯",
   "contest_remind_1d": "⏰ <b>Последний день!</b>\n\nКонкурс заканчивается сегодня. Успейте! 🏆",
-  "contest_yuango_hint": "💚 <b>Yuan Go</b> — главное меню. Выберите раздел 👇"
+  "contest_yuango_hint": "💚 <b>Yuan Go</b> — главное меню. Выберите раздел 👇",
+  "contest_top_you": "📍 <b>Ваше место:</b> #{rank} · ⭐ <b>{points}</b> баллов",
+  "contest_top_you_none": "📍 <b>Вас ещё нет в рейтинге</b> · ⭐ 0 баллов",
+  "contest_top_lead": "🏆 Поздравляем — вы на <b>1 месте!</b>",
+  "contest_top_gap": "⬆️ До {n} места: ещё <b>{need}</b> баллов",
+  "contest_top_done": "✅ {n} место — ваше",
+  "contest_top_prev": "🔼 До {n} места (выше): ещё <b>{need}</b> баллов"
 }

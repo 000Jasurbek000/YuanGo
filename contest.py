@@ -493,6 +493,58 @@ def user_rank(telegram_id: int) -> tuple[int | None, int]:
     return int(row["c"]) + 1, pts
 
 
+def place_points(place: int) -> int | None:
+    """N-o‘rin egasining balli (1-indexed). Bo‘sh bo‘lsa None."""
+    place = int(place)
+    if place < 1:
+        return None
+    row = db._conn.execute(
+        "SELECT points FROM contest_profile WHERE points > 0"
+        " ORDER BY points DESC, updated_at ASC"
+        " LIMIT 1 OFFSET ?",
+        (place - 1,),
+    ).fetchone()
+    return int(row["points"]) if row else None
+
+
+def ranking_progress(telegram_id: int) -> dict:
+    """Foydalanuvchi o‘rni va 1/2/3 (+ oldingi) o‘ringa yetish uchun kerak ball."""
+    tid = int(telegram_id)
+    rank, pts = user_rank(tid)
+    targets = []
+    for place in (1, 2, 3):
+        # Allaqachon bu o‘rindan yuqorida — ko‘rsatilmaydi
+        if rank is not None and rank < place:
+            continue
+        if rank is not None and rank == place:
+            targets.append({"place": place, "need": 0, "done": True})
+            continue
+        target = place_points(place)
+        if target is None:
+            need = 1 if pts <= 0 else 0
+            targets.append(
+                {"place": place, "need": need, "done": need == 0}
+            )
+            continue
+        need = max(0, int(target) - pts + 1)
+        targets.append({"place": place, "need": need, "done": False})
+
+    prev = None
+    if rank is not None and rank > 1:
+        prev_pts = place_points(rank - 1)
+        if prev_pts is not None:
+            prev = {
+                "place": rank - 1,
+                "need": max(0, int(prev_pts) - pts + 1),
+            }
+    return {
+        "rank": rank,
+        "points": pts,
+        "targets": targets,
+        "prev": prev,
+    }
+
+
 def parse_ref_payload(text: str) -> int | None:
     parts = (text or "").strip().split(maxsplit=1)
     if len(parts) < 2:
