@@ -104,7 +104,7 @@
   "contest_yuango_hint": "💚 <b>Yuan Go</b> asosiy menyusi. Kerakli bo‘limni tanlang 👇",
   "contest_top_you": "👤 <b>Sizning natijangiz</b>\n🏅 O‘rin: <b>#{rank}</b>\n⭐ Ball: <b>{points}</b>",
   "contest_top_you_none": "👤 <b>Sizning natijangiz</b>\nHali reytingda emassiz · ⭐ <b>0</b> ball\nBall yig‘ib TOP ga chiqing! 🚀",
-  "contest_top_lead": "🥇 <b>Ajoyib!</b> Siz hozir yetakchidasiz.",
+    "contest_top_lead": "🥇 <b>Ajoyib!</b> Siz hozir yetakchisiz.",
   "contest_top_gap": "🎯 {n}-o‘rin uchun yana <b>{need}</b> ball",
   "contest_top_done": "✅ {n}-o‘rin — sizdasiz",
   "contest_top_prev": "📌 Oldingi o‘rin (#{n}) uchun yana <b>{need}</b> ball"
