@@ -1019,7 +1019,7 @@ async function loadContestSettings() {
             (r, i) => `<tr>
           <td>${i + 1}</td>
           <td><code>${r.telegram_id}</code></td>
-          <td>${[r.first_name, r.last_name].filter(Boolean).join(" ") || r.username || "—"}</td>
+          <td>${r.display_name || [r.first_name, r.last_name].filter(Boolean).join(" ") || r.username || "—"}</td>
           <td><b>${r.points || 0}</b></td>
         </tr>`
           )

@@ -928,9 +928,11 @@ def cmd_contest_top(message: types.Message) -> None:
         return
     lines = []
     for i, row in enumerate(rows, 1):
-        name = (
-            f"{row.get('first_name') or ''} {row.get('last_name') or ''}".strip()
-            or (f"@{row['username']}" if row.get("username") else str(row["telegram_id"]))
+        name = row.get("display_name") or contest.mask_public_name(
+            row.get("first_name"),
+            row.get("last_name"),
+            row.get("username"),
+            row.get("telegram_id"),
         )
         lines.append(
             t(message.chat.id, "contest_top_row").format(

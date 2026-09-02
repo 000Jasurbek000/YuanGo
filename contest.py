@@ -430,6 +430,34 @@ def on_channel_subscribe(referred_id: int) -> dict:
     return {"self": self_award, "ref": ref_award}
 
 
+def mask_public_name(
+    first_name: str | None = None,
+    last_name: str | None = None,
+    username: str | None = None,
+    telegram_id: int | None = None,
+) -> str:
+    """TOP uchun: ism to‘liq, familiya 3 belgi+..., otasining ismi yashirinadi."""
+    first = str(first_name or "").strip()
+    # last_name: "Familiya OtasiningIsmi" — faqat birinchi so‘z (familiya)
+    last_parts = str(last_name or "").strip().split()
+    family = last_parts[0] if last_parts else ""
+    if family:
+        if len(family) <= 3:
+            masked_family = family + "..."
+        else:
+            masked_family = family[:3] + "..."
+    else:
+        masked_family = ""
+    name = f"{first} {masked_family}".strip()
+    if name:
+        return name
+    if username:
+        return f"@{username}"
+    if telegram_id:
+        return str(telegram_id)
+    return "—"
+
+
 def top_ranking(limit: int = 10) -> list[dict]:
     rows = db._conn.execute(
         "SELECT c.telegram_id, c.points, u.first_name, u.last_name, u.username"
@@ -440,7 +468,17 @@ def top_ranking(limit: int = 10) -> list[dict]:
         " LIMIT ?",
         (max(1, min(int(limit), 50)),),
     ).fetchall()
-    return [dict(r) for r in rows]
+    out = []
+    for r in rows:
+        item = dict(r)
+        item["display_name"] = mask_public_name(
+            item.get("first_name"),
+            item.get("last_name"),
+            item.get("username"),
+            item.get("telegram_id"),
+        )
+        out.append(item)
+    return out
 
 
 def user_rank(telegram_id: int) -> tuple[int | None, int]:
