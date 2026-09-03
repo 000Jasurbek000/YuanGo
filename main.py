@@ -87,6 +87,22 @@ app = Flask(__name__, static_folder=str(PUBLIC_DIR), static_url_path="")
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MB
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode=None)
 
+
+@app.errorhandler(Exception)
+def _unhandled_error(exc):
+    """Worker qotib 502 bo'lmasin — yumshoq javob + log."""
+    from werkzeug.exceptions import HTTPException
+
+    if isinstance(exc, HTTPException):
+        return exc
+    print(f"Unhandled error: {exc}")
+    try:
+        if request.path.startswith("/bot/webhook"):
+            return "", 200
+    except Exception:
+        pass
+    return jsonify(ok=False, error="server_busy"), 503
+
 RATE_UZS = 1840
 MIN_CNY = 30
 MAX_CNY = 500
@@ -1339,15 +1355,18 @@ WEBHOOK_PATH = f"/bot/webhook/{WEBHOOK_SECRET}"
 
 @app.post(WEBHOOK_PATH)
 def telegram_webhook():
-    json_str = request.get_data().decode("utf-8")
-    update = telebot.types.Update.de_json(json_str)
-    if update is None:
-        return "", 200
-    # Telegram qayta yuborgan update ikki marta ishlanmasin
-    if getattr(update, "update_id", None) is not None:
-        if not db.claim_telegram_update(update.update_id):
+    """Telegram update — xato bo'lsa ham 200 (502/qayta bosim oldini olish)."""
+    try:
+        json_str = request.get_data().decode("utf-8")
+        update = telebot.types.Update.de_json(json_str)
+        if update is None:
             return "", 200
-    dispatch_telegram_update(update)
+        if getattr(update, "update_id", None) is not None:
+            if not db.claim_telegram_update(update.update_id):
+                return "", 200
+        dispatch_telegram_update(update)
+    except Exception as exc:
+        print(f"Webhook xato: {exc}")
     return "", 200
 
 

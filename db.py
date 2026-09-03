@@ -1,17 +1,102 @@
 """Yuan Go uchun SQLite ma'lumotlar bazasi."""
 
 import json
+import random
 import secrets
 import sqlite3
 import threading
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
 DB_PATH = Path(__file__).resolve().parent / "yuango.db"
 
-_lock = threading.Lock()
-_conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
-_conn.row_factory = sqlite3.Row
+# Parallel so'rovlar / multi-worker: kutish + WAL (database is locked → 502 oldini olish)
+_SQLITE_TIMEOUT_SEC = 30.0
+_BUSY_TIMEOUT_MS = 30_000
+_LOCK_RETRIES = 14
+
+_lock = threading.RLock()
+_local = threading.local()
+
+
+def _is_lock_error(exc: BaseException) -> bool:
+    msg = str(exc).lower()
+    return "locked" in msg or "busy" in msg
+
+
+def _configure(conn: sqlite3.Connection) -> None:
+    conn.row_factory = sqlite3.Row
+    conn.execute(f"PRAGMA busy_timeout = {_BUSY_TIMEOUT_MS}")
+    mode = conn.execute("PRAGMA journal_mode = WAL").fetchone()
+    conn.execute("PRAGMA synchronous = NORMAL")
+    conn.execute("PRAGMA temp_store = MEMORY")
+    conn.execute("PRAGMA wal_autocheckpoint = 1000")
+    conn.execute("PRAGMA foreign_keys = ON")
+    if mode and str(mode[0]).upper() != "WAL":
+        print(f"SQLite WAL yoqilmadi (mode={mode[0]}); busy_timeout ishlaydi")
+
+
+def _raw_conn() -> sqlite3.Connection:
+    """Har bir thread uchun alohida connection (SQLite thread-safety)."""
+    conn = getattr(_local, "conn", None)
+    if conn is not None:
+        return conn
+    conn = sqlite3.connect(
+        str(DB_PATH),
+        timeout=_SQLITE_TIMEOUT_SEC,
+        check_same_thread=True,
+    )
+    try:
+        _configure(conn)
+    except sqlite3.Error as exc:
+        print(f"SQLite PRAGMA ogohlantirish: {exc}")
+    _local.conn = conn
+    return conn
+
+
+def _retry_sql(fn):
+    last: BaseException | None = None
+    for attempt in range(_LOCK_RETRIES):
+        try:
+            return fn()
+        except sqlite3.OperationalError as exc:
+            last = exc
+            if not _is_lock_error(exc):
+                raise
+            time.sleep(min(0.05 * (2**attempt), 1.25) + random.uniform(0, 0.08))
+        except sqlite3.DatabaseError as exc:
+            last = exc
+            if not _is_lock_error(exc):
+                raise
+            time.sleep(min(0.05 * (2**attempt), 1.25) + random.uniform(0, 0.08))
+    assert last is not None
+    raise last
+
+
+class _ConnProxy:
+    """db._conn — thread-local + locked/busy retry."""
+
+    def execute(self, sql, parameters=()):
+        return _retry_sql(lambda: _raw_conn().execute(sql, parameters))
+
+    def executemany(self, sql, seq_of_parameters):
+        return _retry_sql(lambda: _raw_conn().executemany(sql, seq_of_parameters))
+
+    def commit(self):
+        return _retry_sql(lambda: _raw_conn().commit())
+
+    def rollback(self):
+        return _retry_sql(lambda: _raw_conn().rollback())
+
+    def cursor(self, *args, **kwargs):
+        return _retry_sql(lambda: _raw_conn().cursor(*args, **kwargs))
+
+    def __getattr__(self, name):
+        return getattr(_raw_conn(), name)
+
+
+_conn = _ConnProxy()
 
 _conn.execute(
     """
@@ -277,10 +362,11 @@ def mark_registered(telegram_id: int, **fields) -> None:
 
 
 def get_user(telegram_id: int) -> dict | None:
-    row = _conn.execute(
-        "SELECT * FROM users WHERE telegram_id = ?", (telegram_id,)
-    ).fetchone()
-    return dict(row) if row else None
+    with _lock:
+        row = _conn.execute(
+            "SELECT * FROM users WHERE telegram_id = ?", (telegram_id,)
+        ).fetchone()
+        return dict(row) if row else None
 
 
 def update_user(telegram_id: int, **fields) -> None:
