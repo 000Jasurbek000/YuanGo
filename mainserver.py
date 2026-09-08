@@ -651,20 +651,26 @@ def send_start_menu(chat_id: int, text: str | None = None) -> None:
 # ---------------------------------------------------------------- Registration
 
 def _prompt_language(chat_id: int, for_operator: bool = False) -> None:
-    """Til tanlash — faqat step yangi o'zgaganda yoki foydalanuvchi /start qilganda."""
+    """Til tanlash — pastki reply tugmalar yashirinadi, faqat inline til."""
     text = (
         "🌐 Foydalanuvchi uchun tilni tanlang · Выберите язык · Choose a language:"
         if for_operator
         else "🌐 Tilni tanlang · Выберите язык · Choose a language:"
     )
-    bot.send_message(chat_id, text, reply_markup=lang_keyboard())
+    bot.send_message(chat_id, text, reply_markup=types.ReplyKeyboardRemove())
+    bot.send_message(chat_id, "⬇️", reply_markup=lang_keyboard())
 
 
 def continue_registration(chat_id: int, *, for_operator: bool = False) -> None:
     """Ro'yxatdan o'tishni DB dagi bosqichdan davom ettirish (multi-worker xavfsiz)."""
     step = db.get_reg_step(chat_id)
     if step in ("name", "edit_name"):
-        bot.send_message(chat_id, t(chat_id, "ask_name"), parse_mode="HTML")
+        bot.send_message(
+            chat_id,
+            t(chat_id, "ask_name"),
+            parse_mode="HTML",
+            reply_markup=types.ReplyKeyboardRemove(),
+        )
         return
     if step in ("phone", "edit_phone"):
         bot.send_message(
@@ -750,17 +756,18 @@ def cmd_start(message: types.Message) -> None:
         send_start_menu(chat_id)
         return
 
-    # Yangi foydalanuvchi — bonus yoqilgan bo'lsa darhol xabar
+    # Yangi foydalanuvchi — avval faqat ro'yxat: til → FIO → tel
+    # Konkurs/Yuan Go tugmalari faqat ro'yxatdan keyin
     bonus = db.get_bonus_config()
     if bonus.get("enabled"):
         bot.send_message(
             chat_id,
             t(chat_id, "promo_welcome_new").format(cny=bonus.get("cny", 5)),
             parse_mode="HTML",
+            reply_markup=types.ReplyKeyboardRemove(),
         )
     if contest.is_contest_enabled():
         apply_contest_bootstrap(chat_id)
-        send_contest_root(chat_id)
     continue_registration(chat_id)
 
 
@@ -801,7 +808,12 @@ def cb_language(call: types.CallbackQuery) -> None:
         return
 
     db.set_reg_step(chat_id, "name")
-    bot.send_message(chat_id, t(chat_id, "ask_name"), parse_mode="HTML")
+    bot.send_message(
+        chat_id,
+        t(chat_id, "ask_name"),
+        parse_mode="HTML",
+        reply_markup=types.ReplyKeyboardRemove(),
+    )
 
 
 @bot.message_handler(
@@ -917,6 +929,15 @@ def cmd_contest_open(message: types.Message) -> None:
             message.from_user.username if message.from_user else "",
             touch_seen=True,
         )
+        if not is_registered(chat_id):
+            bot.send_message(
+                chat_id,
+                t(chat_id, "need_register"),
+                parse_mode="HTML",
+                reply_markup=types.ReplyKeyboardRemove(),
+            )
+            continue_registration(chat_id)
+            return
         if not contest.is_contest_enabled():
             bot.send_message(chat_id, t(chat_id, "contest_off"))
             send_start_menu(chat_id)
@@ -945,6 +966,15 @@ def cmd_yuango_open(message: types.Message) -> None:
             message.from_user.username if message.from_user else "",
             touch_seen=True,
         )
+        if not is_registered(chat_id):
+            bot.send_message(
+                chat_id,
+                t(chat_id, "need_register"),
+                parse_mode="HTML",
+                reply_markup=types.ReplyKeyboardRemove(),
+            )
+            continue_registration(chat_id)
+            return
         bot.send_message(
             chat_id,
             t(chat_id, "contest_yuango_hint"),
