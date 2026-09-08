@@ -573,7 +573,30 @@ def due_contest_reminders() -> list[str]:
     return due
 
 
+def claim_contest_reminder(kind: str) -> bool:
+    """Atomik claim: birinchi worker True oladi, qolganlari False (takror yuborilmasin)."""
+    if kind == "2d":
+        key = "contest_reminded_2d"
+    elif kind == "1d":
+        key = "contest_reminded_1d"
+    else:
+        return False
+    with db._lock:
+        db._conn.execute(
+            "INSERT OR IGNORE INTO settings (key, value) VALUES (?, '0')",
+            (key,),
+        )
+        cur = db._conn.execute(
+            "UPDATE settings SET value = '1' WHERE key = ?"
+            " AND lower(IFNULL(value, '0')) NOT IN ('1', 'true', 'yes', 'on')",
+            (key,),
+        )
+        db._conn.commit()
+        return int(cur.rowcount or 0) > 0
+
+
 def mark_reminder_sent(kind: str) -> None:
+    """Eslatma yuborilgan deb belgilash (claim allaqachon qo'ygan bo'lishi mumkin)."""
     if kind == "2d":
         db.set_settings({"contest_reminded_2d": "1"})
     elif kind == "1d":

@@ -132,6 +132,39 @@ def labels(key: str) -> set:
     return {I18N[lang][key] for lang in I18N}
 
 
+_MENU_LABEL_KEYS = (
+    "btn_buy",
+    "btn_history",
+    "btn_rate",
+    "btn_qr",
+    "btn_contact",
+    "btn_settings",
+    "btn_contest",
+    "btn_yuango",
+    "btn_contest_earn",
+    "btn_contest_invite",
+    "btn_contest_my",
+    "btn_contest_top",
+    "btn_contest_rules",
+    "btn_contest_back",
+    "share_phone",
+)
+
+
+def all_menu_labels() -> set[str]:
+    out: set[str] = set()
+    for key in _MENU_LABEL_KEYS:
+        try:
+            out |= labels(key)
+        except KeyError:
+            continue
+    return out
+
+
+def is_menu_button_text(text: str | None) -> bool:
+    return bool(text) and text.strip() in all_menu_labels()
+
+
 # Ro'yxatdan o'tish / sharh holati endi DB da (reg_step, review_state).
 # Passenger multi-worker da xotira dict ishlamaydi.
 
@@ -753,6 +786,7 @@ def cb_language(call: types.CallbackQuery) -> None:
 
 @bot.message_handler(
     func=lambda m: db.get_reg_step(m.chat.id) in ("name", "edit_name")
+    and not is_menu_button_text(m.text)
 )
 def reg_name(message: types.Message) -> None:
     chat_id = message.chat.id
@@ -787,6 +821,7 @@ def reg_phone_contact(message: types.Message) -> None:
 
 @bot.message_handler(
     func=lambda m: db.get_reg_step(m.chat.id) in ("phone", "edit_phone")
+    and not is_menu_button_text(m.text)
 )
 def reg_phone_text(message: types.Message) -> None:
     chat_id = message.chat.id
@@ -2283,6 +2318,10 @@ def api_admin_contest_set():
 def broadcast_contest_reminder(kind: str) -> None:
     import time
 
+    # Avval atomik claim — multi-worker bir xil eslatmani qayta yubormasin
+    if not contest.claim_contest_reminder(kind):
+        return
+
     key = "contest_remind_2d" if kind == "2d" else "contest_remind_1d"
     sent = 0
     failed = 0
@@ -2297,7 +2336,6 @@ def broadcast_contest_reminder(kind: str) -> None:
         except Exception as exc:
             failed += 1
             print(f"Contest remind xato ({chat_id}): {exc}")
-    contest.mark_reminder_sent(kind)
     print(f"Contest reminder {kind}: sent={sent}, failed={failed}")
 
 
