@@ -700,6 +700,27 @@ def cmd_reregister(message: types.Message) -> None:
     continue_registration(chat_id, for_operator=is_operator(chat_id))
 
 
+@bot.message_handler(commands=["reset"])
+def cmd_reset(message: types.Message) -> None:
+    """Test: shu foydalanuvchini bazadan butunlay o'chiradi — bot yangi deb ko'radi."""
+    chat_id = message.chat.id
+    contest_stats = contest.purge_user(chat_id)
+    db_stats = db.purge_user(chat_id)
+    bot.send_message(
+        chat_id,
+        "🗑 <b>To‘liq reset qilindi.</b>\n\n"
+        "Sizga tegishli barcha yozuvlar o‘chirildi "
+        "(profil, tranzaksiyalar, konkurs ballari, referallar).\n"
+        "Bot sizni endi <b>yangi foydalanuvchi</b> deb ko‘radi.\n\n"
+        f"<i>users: {db_stats.get('users', 0)}, "
+        f"tx: {db_stats.get('transactions', 0)}, "
+        f"contest: {contest_stats.get('contest_profile', 0)}</i>\n\n"
+        "Davom etish uchun /start bosing.",
+        parse_mode="HTML",
+        reply_markup=types.ReplyKeyboardRemove(),
+    )
+
+
 @bot.message_handler(commands=["start"])
 def cmd_start(message: types.Message) -> None:
     chat_id = message.chat.id

@@ -215,6 +215,53 @@ def update_contest_channel(channel: str) -> dict:
     return get_contest_config()
 
 
+def purge_user(telegram_id: int) -> dict:
+    """Konkurs yozuvlarini tozalash (test /reset)."""
+    tid = int(telegram_id)
+    deleted = {
+        "contest_ref_as_referred": 0,
+        "contest_ref_as_referrer": 0,
+        "contest_profile": 0,
+        "points_revoked": 0,
+    }
+    with db._lock:
+        # Shu user orqali refererga berilgan ballarni qaytarish
+        rows = db._conn.execute(
+            "SELECT referrer_id, points FROM contest_ref_events WHERE referred_id = ?",
+            (tid,),
+        ).fetchall()
+        for row in rows:
+            rid = int(row["referrer_id"] or 0)
+            pts = int(row["points"] or 0)
+            if rid and pts:
+                db._conn.execute(
+                    "UPDATE contest_profile SET"
+                    " points = CASE WHEN points > ? THEN points - ? ELSE 0 END,"
+                    " updated_at = ? WHERE telegram_id = ?",
+                    (pts, pts, _now(), rid),
+                )
+                deleted["points_revoked"] += pts
+        cur = db._conn.execute(
+            "DELETE FROM contest_ref_events WHERE referred_id = ?", (tid,)
+        )
+        deleted["contest_ref_as_referred"] = int(cur.rowcount or 0)
+        cur = db._conn.execute(
+            "DELETE FROM contest_ref_events WHERE referrer_id = ?", (tid,)
+        )
+        deleted["contest_ref_as_referrer"] = int(cur.rowcount or 0)
+        db._conn.execute(
+            "UPDATE contest_profile SET referred_by = NULL, updated_at = ?"
+            " WHERE referred_by = ?",
+            (_now(), tid),
+        )
+        cur = db._conn.execute(
+            "DELETE FROM contest_profile WHERE telegram_id = ?", (tid,)
+        )
+        deleted["contest_profile"] = int(cur.rowcount or 0)
+        db._conn.commit()
+    return deleted
+
+
 def ensure_profile(telegram_id: int) -> dict:
     tid = int(telegram_id)
     with db._lock:

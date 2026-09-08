@@ -411,6 +411,34 @@ def reset_registration(telegram_id: int) -> None:
     clear_review_state(telegram_id)
 
 
+def purge_user(telegram_id: int) -> dict:
+    """Foydalanuvchini bazadan butunlay o'chiradi (test /reset).
+
+    test_users qatoriga tegilmaydi — test rejimda qayta /start ishlashi uchun.
+    """
+    tid = int(telegram_id)
+    deleted = {
+        "transactions": 0,
+        "reviews": 0,
+        "users": 0,
+    }
+    with _lock:
+        cur = _conn.execute(
+            "DELETE FROM transactions WHERE telegram_id = ?", (tid,)
+        )
+        deleted["transactions"] = int(cur.rowcount or 0)
+        cur = _conn.execute(
+            "DELETE FROM reviews WHERE telegram_id = ?", (tid,)
+        )
+        deleted["reviews"] = int(cur.rowcount or 0)
+        cur = _conn.execute(
+            "DELETE FROM users WHERE telegram_id = ?", (tid,)
+        )
+        deleted["users"] = int(cur.rowcount or 0)
+        _conn.commit()
+    return deleted
+
+
 def get_review_state(telegram_id: int) -> dict:
     user = get_user(telegram_id)
     raw = str((user or {}).get("review_state") or "").strip()
