@@ -243,45 +243,34 @@ def main_keyboard(chat_id) -> types.ReplyKeyboardMarkup:
     """Asosiy reply markup — rolga qarab ochilish tugmalari bilan."""
     user = db.get_user(int(chat_id)) or {}
     lang = user.get("lang", "uz")
+    if lang not in I18N:
+        lang = "uz"
     tr = I18N[lang]
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
 
+    def _btn(text: str, url_suffix: str | None = None) -> types.KeyboardButton:
+        """HTTPS bo'lmasa web_app yo'q — aks holda Telegram xatosi, bot jim qoladi."""
+        if WEBAPP_READY and url_suffix is not None:
+            return types.KeyboardButton(
+                text=text,
+                web_app=types.WebAppInfo(url=f"{WEBAPP_URL}{url_suffix}"),
+            )
+        return types.KeyboardButton(text=text)
+
     sync_owner(chat_id)
     if is_super(chat_id):
+        keyboard.row(_btn("👑 Super Admin", f"/admin?tg_id={chat_id}"))
         keyboard.row(
-            types.KeyboardButton(
-                text="👑 Super Admin",
-                web_app=types.WebAppInfo(url=f"{WEBAPP_URL}/admin?tg_id={chat_id}"),
-            )
-        )
-        keyboard.row(
-            types.KeyboardButton(
-                text="🛡 Admin",
-                web_app=types.WebAppInfo(url=f"{WEBAPP_URL}/admin-app?tg_id={chat_id}"),
-            ),
-            types.KeyboardButton(
-                text="💱 Foydalanuvchi",
-                web_app=types.WebAppInfo(url=f"{WEBAPP_URL}/?tg_id={chat_id}"),
-            ),
+            _btn("🛡 Admin", f"/admin-app?tg_id={chat_id}"),
+            _btn("💱 Foydalanuvchi", f"/?tg_id={chat_id}"),
         )
     elif is_operator(chat_id):
         keyboard.row(
-            types.KeyboardButton(
-                text="🛡 Admin",
-                web_app=types.WebAppInfo(url=f"{WEBAPP_URL}/admin-app?tg_id={chat_id}"),
-            ),
-            types.KeyboardButton(
-                text="💱 Foydalanuvchi",
-                web_app=types.WebAppInfo(url=f"{WEBAPP_URL}/?tg_id={chat_id}"),
-            ),
+            _btn("🛡 Admin", f"/admin-app?tg_id={chat_id}"),
+            _btn("💱 Foydalanuvchi", f"/?tg_id={chat_id}"),
         )
     else:
-        keyboard.row(
-            types.KeyboardButton(
-                text=tr["btn_buy"],
-                web_app=types.WebAppInfo(url=f"{WEBAPP_URL}?tg_id={chat_id}"),
-            )
-        )
+        keyboard.row(_btn(tr["btn_buy"], f"?tg_id={chat_id}"))
 
     keyboard.row(
         types.KeyboardButton(text=tr["btn_history"]),
@@ -386,8 +375,11 @@ def notify_referrer(award: dict | None) -> None:
 
 
 def apply_contest_bootstrap(chat_id: int) -> None:
-    for award in contest.bootstrap_self_for_user(int(chat_id)):
-        notify_contest_points(chat_id, award["points"], award["total"])
+    try:
+        for award in contest.bootstrap_self_for_user(int(chat_id)):
+            notify_contest_points(chat_id, award["points"], award["total"])
+    except Exception as exc:
+        print(f"Contest bootstrap xato ({chat_id}): {exc}")
 
 
 def send_contest_root(chat_id: int, text: str | None = None) -> None:
@@ -400,13 +392,14 @@ def send_contest_root(chat_id: int, text: str | None = None) -> None:
 
 
 def send_contest_menu(chat_id: int) -> None:
-    apply_contest_bootstrap(chat_id)
+    # Avval menyu — bootstrap xatosi/bloklash menyuni yutib yubormasin
     bot.send_message(
         chat_id,
         t(chat_id, "contest_menu"),
         parse_mode="HTML",
         reply_markup=contest_menu_keyboard(chat_id),
     )
+    apply_contest_bootstrap(chat_id)
 
 
 def earn_checklist_text(chat_id: int) -> tuple[str, types.InlineKeyboardMarkup | None]:
@@ -917,21 +910,72 @@ def require_registration(message: types.Message) -> bool:
 
 @bot.message_handler(func=lambda m: m.text in labels("btn_contest"))
 def cmd_contest_open(message: types.Message) -> None:
-    if not contest.is_contest_enabled():
-        bot.send_message(message.chat.id, t(message.chat.id, "contest_off"))
-        send_start_menu(message.chat.id)
-        return
-    send_contest_menu(message.chat.id)
+    chat_id = message.chat.id
+    try:
+        db.ensure_user(
+            chat_id,
+            message.from_user.username if message.from_user else "",
+            touch_seen=True,
+        )
+        if not contest.is_contest_enabled():
+            bot.send_message(chat_id, t(chat_id, "contest_off"))
+            send_start_menu(chat_id)
+            return
+        send_contest_menu(chat_id)
+    except Exception as exc:
+        print(f"cmd_contest_open xato ({chat_id}): {exc}")
+        try:
+            bot.send_message(
+                chat_id,
+                "⚠️ Konkurs ochilmadi. /start bosing yoki qayta urinib ko‘ring.",
+                reply_markup=contest_root_keyboard(chat_id)
+                if contest.is_contest_enabled()
+                else None,
+            )
+        except Exception:
+            pass
 
 
 @bot.message_handler(func=lambda m: m.text in labels("btn_yuango"))
 def cmd_yuango_open(message: types.Message) -> None:
-    bot.send_message(
-        message.chat.id,
-        t(message.chat.id, "contest_yuango_hint"),
-        parse_mode="HTML",
-        reply_markup=main_keyboard(message.chat.id),
-    )
+    chat_id = message.chat.id
+    try:
+        db.ensure_user(
+            chat_id,
+            message.from_user.username if message.from_user else "",
+            touch_seen=True,
+        )
+        bot.send_message(
+            chat_id,
+            t(chat_id, "contest_yuango_hint"),
+            parse_mode="HTML",
+            reply_markup=main_keyboard(chat_id),
+        )
+    except Exception as exc:
+        print(f"cmd_yuango_open xato ({chat_id}): {exc}")
+        try:
+            lang = (db.get_user(chat_id) or {}).get("lang", "uz")
+            tr = I18N.get(lang, I18N["uz"])
+            kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            kb.row(
+                types.KeyboardButton(text=tr["btn_history"]),
+                types.KeyboardButton(text=tr["btn_rate"]),
+            )
+            kb.row(
+                types.KeyboardButton(text=tr["btn_qr"]),
+                types.KeyboardButton(text=tr["btn_contact"]),
+            )
+            kb.row(types.KeyboardButton(text=tr["btn_settings"]))
+            if contest.is_contest_enabled():
+                kb.row(types.KeyboardButton(text=tr["btn_contest_back"]))
+            bot.send_message(
+                chat_id,
+                t(chat_id, "contest_yuango_hint"),
+                parse_mode="HTML",
+                reply_markup=kb,
+            )
+        except Exception as exc2:
+            print(f"cmd_yuango_open fallback xato ({chat_id}): {exc2}")
 
 
 @bot.message_handler(func=lambda m: m.text in labels("btn_contest_back"))
