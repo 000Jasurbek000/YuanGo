@@ -651,14 +651,13 @@ def send_start_menu(chat_id: int, text: str | None = None) -> None:
 # ---------------------------------------------------------------- Registration
 
 def _prompt_language(chat_id: int, for_operator: bool = False) -> None:
-    """Til tanlash — pastki reply tugmalar yashirinadi, faqat inline til."""
+    """Til tanlash — matn + inline til tugmalari bir xabarda."""
     text = (
         "🌐 Foydalanuvchi uchun tilni tanlang · Выберите язык · Choose a language:"
         if for_operator
         else "🌐 Tilni tanlang · Выберите язык · Choose a language:"
     )
-    bot.send_message(chat_id, text, reply_markup=types.ReplyKeyboardRemove())
-    bot.send_message(chat_id, "⬇️", reply_markup=lang_keyboard())
+    bot.send_message(chat_id, text, reply_markup=lang_keyboard())
 
 
 def continue_registration(chat_id: int, *, for_operator: bool = False) -> None:
