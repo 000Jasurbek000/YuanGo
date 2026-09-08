@@ -2647,14 +2647,28 @@ def run_due_broadcasts() -> None:
 
 
 def start_broadcast_loop() -> None:
+    """Faqat bitta workerda ishlaydi (Passenger multi-worker)."""
+    lock_path = BASE_DIR / ".broadcast_loop.lock"
+    try:
+        lock_file = open(lock_path, "a+", encoding="utf-8")
+        fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        print("Broadcast loop: boshqa workerda allaqachon ishlayapti")
+        return
+    # lock_file yopilmasin — jarayon yashagancha ushlab turiladi
+    globals()["_broadcast_loop_lock_file"] = lock_file
+
     def loop():
-        # Birinchi tekshiruv biroz kechiktiriladi
         threading.Event().wait(5)
         while True:
-            run_due_broadcasts()
-            threading.Event().wait(60)  # har daqiqa
+            try:
+                run_due_broadcasts()
+            except Exception as exc:
+                print(f"Broadcast loop xato: {exc}")
+            threading.Event().wait(60)
 
     threading.Thread(target=loop, daemon=True).start()
+    print("Broadcast loop shu workerda ishga tushdi")
 
 
 @app.get("/api/admin/broadcasts")
@@ -3263,34 +3277,61 @@ def run_bot() -> None:
             time.sleep(3)
 
 def start_bot_once() -> None:
-    """Agar domen (HTTPS) tayyor bo'lsa — webhook o'rnatadi (Passenger'ga mos,
-    doimiy jarayon kerak emas). Aks holda — vaqtincha polling'ga tushadi
-    (faqat bitta workerda, fayl-lock orqali)."""
+    """HTTPS bo'lsa webhook (fon thread, bloklamasdan). Aks holda polling."""
     if WEBAPP_READY:
-        try:
-            bot.remove_webhook()
-            time.sleep(1)
+        def _setup_webhook() -> None:
+            lock_path = BASE_DIR / ".webhook_setup.lock"
+            try:
+                lock_file = open(lock_path, "a+", encoding="utf-8")
+                fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError:
+                print("Webhook: boshqa worker sozlamoqda / sozlagan")
+                return
+            globals()["_webhook_setup_lock_file"] = lock_file
             webhook_url = WEBAPP_URL.rstrip("/") + WEBHOOK_PATH
-            bot.set_webhook(url=webhook_url)
-            print(f"Webhook o'rnatildi: {webhook_url}")
-        except Exception as exc:
-            print(f"Webhook o'rnatishda xato: {exc}")
+            try:
+                # remove_webhook + sleep QILINMAYDI — har worker webhookni uzib botni o'ldirardi
+                bot.set_webhook(url=webhook_url, drop_pending_updates=False)
+                print(f"Webhook o'rnatildi: {webhook_url}")
+            except Exception as exc:
+                print(f"Webhook o'rnatishda xato: {exc}")
+                try:
+                    time.sleep(2)
+                    bot.set_webhook(url=webhook_url)
+                    print(f"Webhook qayta o'rnatildi: {webhook_url}")
+                except Exception as exc2:
+                    print(f"Webhook qayta urinish xato: {exc2}")
+
+        threading.Thread(target=_setup_webhook, daemon=True).start()
         return
 
-    lock_path = "/tmp/yuango_bot.lock"
-    lock_file = open(lock_path, "w")
+    lock_path = str(BASE_DIR / "yuango_bot.lock")
     try:
+        lock_file = open(lock_path, "w", encoding="utf-8")
         fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except OSError:
         print("Bot allaqachon boshqa workerda ishlayapti, bu yerda ishga tushirilmaydi.")
         return
+    globals()["_bot_poll_lock_file"] = lock_file
     threading.Thread(target=run_bot, daemon=True).start()
 
 
-db.ensure_rate_history_seeded()
-start_storage_cleanup_loop()
-start_broadcast_loop()
-start_bot_once()
+try:
+    db.ensure_rate_history_seeded()
+except Exception as exc:
+    print(f"rate history seed xato: {exc}")
+try:
+    start_storage_cleanup_loop()
+except Exception as exc:
+    print(f"storage cleanup start xato: {exc}")
+try:
+    start_broadcast_loop()
+except Exception as exc:
+    print(f"broadcast loop start xato: {exc}")
+try:
+    start_bot_once()
+except Exception as exc:
+    print(f"bot start xato: {exc}")
 
 if __name__ == "__main__":
     print(f"Yuan Go web: http://localhost:{PORT}")

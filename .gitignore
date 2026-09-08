@@ -30,3 +30,6 @@ Thumbs.db
 # Deploy leftovers
 .vercel
 .netlify
+*.lock
+.broadcast_loop.lock
+.webhook_setup.lock
